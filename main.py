@@ -14,7 +14,22 @@ request = Request(
     url=args.url,
     headers=args.header,
     body=args.data,
-    timeout=args.max_time
+    timeout=args.max_time,
+
+    verbose=args.verbose,
+    follow_redirects=args.location,
+    insecure=args.insecure,
+
+    auth=args.user,
+    user_agent=args.user_agent,
+
+    output=args.output,
+    head=args.head,
+
+    cookies=args.cookie,
+    cookie_jar=args.cookie_jar,
+
+    form=args.form
 )
 
 

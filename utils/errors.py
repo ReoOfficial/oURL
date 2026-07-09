@@ -9,3 +9,9 @@ class InvalidHeaderException(Exception):
 
 class InvalidTimeoutException(Exception):
     pass
+
+class RequestTimeoutException(Exception):
+    pass
+
+class ConnectionException(Exception):
+    pass

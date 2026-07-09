@@ -13,11 +13,7 @@ class Client:
         if request.user_agent:
             headers["User-Agent"] = request.user_agent
 
-        auth = None
-
-        if request.auth:
-            username, password = request.auth.split(":", 1)
-            auth = (username, password)
+        auth = request.auth
 
         method = request.method
 

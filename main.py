@@ -4,7 +4,13 @@ from core.request import Request
 from core.client import Client
 from output.formatter import format_response
 from output.printer import print_response
-from utils.helpers import parse_headers
+from utils.helpers import (
+    parse_headers,
+    parse_headers,
+    parse_auth,
+    parse_cookies,
+    parse_forms,
+)
 
 args = parse_args()
 
@@ -21,16 +27,16 @@ request = Request(
     follow_redirects=args.location,
     insecure=args.insecure,
 
-    auth=args.user,
+    auth=parse_auth(args.user),
     user_agent=args.user_agent,
 
     output=args.output,
     head=args.head,
 
-    cookies=args.cookie,
+    cookies=parse_cookies(args.cookie),
     cookie_jar=args.cookie_jar,
 
-    form=args.form
+    form=parse_forms(args.form)
 )
 
 

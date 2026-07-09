@@ -4,6 +4,7 @@ from core.request import Request
 from core.client import Client
 from output.formatter import format_response
 from output.printer import print_response
+from utils.helpers import parse_headers
 
 args = parse_args()
 
@@ -12,7 +13,7 @@ validate(args)
 request = Request(
     method=args.method,
     url=args.url,
-    headers=args.header,
+    headers=parse_headers(args.header),
     body=args.data,
     timeout=args.max_time,
 

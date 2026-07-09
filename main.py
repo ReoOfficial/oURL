@@ -46,4 +46,4 @@ response = client.send(request)
 
 output = format_response(response)
 
-print_response(output)
+print_response(output, args.output)

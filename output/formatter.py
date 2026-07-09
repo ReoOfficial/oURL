@@ -1,15 +1,15 @@
 def format_response(response):
     output = ""
 
-    output += f"Status: {response.status_code}\n\n"
+    output += f"HTTP Status: {response.get_status_code()} {response.get_reason()}\n\n"
 
     output += "Headers:\n"
 
-    for key, value in response.headers.items():
+    for key, value in response.get_headers().items():
         output += f"{key}: {value}\n"
 
     output += "\nbody:\n"
 
-    output += response.body
+    output += response.get_body()
 
     return output

@@ -15,6 +15,7 @@ def parse_args():
         "-X",
         "--request",
         dest="method",
+        default="GET",
         help="HTTP Method"
     )
 
@@ -75,7 +76,7 @@ def parse_args():
     parser.add_argument(
         "-o",
         "--output",
-        help="Save responseto file"
+        help="Save response to file"
     )
 
     parser.add_argument(

@@ -17,6 +17,8 @@ args = parse_args()
 
 validate(args)
 
+form_data, form_files = parse_forms(args.form)
+
 request = Request(
     method=args.method,
     url=args.url,
@@ -37,7 +39,8 @@ request = Request(
     cookies=parse_cookies(args.cookie),
     cookie_jar=args.cookie_jar,
 
-    form=parse_forms(args.form)
+    form_data=form_data,
+    form_files=form_files,
 )
 
 

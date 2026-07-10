@@ -6,16 +6,22 @@ class Request:
         headers=None,
         body=None,
         timeout=15,
+
         verbose=False,
         follow_redirects=False,
         insecure=False,
+
         auth=None,
         user_agent=None,
+
         output=None,
         head=False,
+
         cookies=None,
         cookie_jar=None,
-        form=None
+
+        form_data=None,
+        form_files=None,
     ):
         self.method = method
         self.url = url
@@ -36,4 +42,7 @@ class Request:
         self.cookies = cookies
         self.cookie_jar = cookie_jar
 
-        self.form = form
+        self.form_data = form_data
+        self.form_files = form_files
+
+        

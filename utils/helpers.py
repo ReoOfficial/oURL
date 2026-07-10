@@ -32,16 +32,24 @@ def parse_cookies(cookie):
 
 
 def parse_forms(forms):
-    if not forms:
-        return {}
-    
     data = {}
+    files = {}
 
+    if not forms:
+        return data, files
+    
     for form in forms:
-        key, value = form.split("=", 1)
-        data[key] = value
 
-    return data
+        key, value = form.split("=", 1)
+
+        if value.startswith("@"):
+            filename = value[1:]
+            files[key] = open(filename, "rb")
+        
+        else:
+            data[key] = value
+
+    return data, files
 
 
 def save_cookies(cookies, filename):

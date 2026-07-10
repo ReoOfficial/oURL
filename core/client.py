@@ -22,13 +22,18 @@ class Client:
 
         try:
             response = requests.request(
+
                 method=request.method,
                 url=request.url,
-                headers=request.headers,
-                data=request.body,
+                headers=headers,
+
+                data=request.form_data if request.form_data else request.body,
+                files=request.form_files,
+
                 timeout=request.timeout,
                 verify=not request.insecure,
                 allow_redirects=request.follow_redirects,
+
                 auth=auth,
                 cookies=request.cookies 
             )

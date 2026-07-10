@@ -42,3 +42,28 @@ def parse_forms(forms):
         data[key] = value
 
     return data
+
+
+def save_cookies(cookies, filename):
+    if not filename:
+        return
+    
+    with open(filename, "w", encoding="utf-8") as file:
+        file.write("# Netscape HTTP Cookie FIle\n")
+
+        for cookie in cookies:
+            domain = cookie.domain or ""
+            include_subdomains = "TRUE" if domain.startswith(".") else "FALSE"
+            path = cookie.path or "/"
+            secure = "TRUE" if cookie.secure else "FALSE"
+            expires = int(cookie.expires) if cookie.expires else 0
+
+            file.write(
+                f"{domain}\t"
+                f"{include_subdomains}\t"
+                f"{path}\t"
+                f"{secure}\t"
+                f"{expires}\t"
+                f"{cookie.name}\t"
+                f"{cookie.value}\n"
+            )

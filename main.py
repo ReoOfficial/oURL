@@ -6,11 +6,12 @@ from output.formatter import format_response
 from output.printer import print_response
 from utils.helpers import (
     parse_headers,
-    parse_headers,
     parse_auth,
     parse_cookies,
     parse_forms,
+    save_cookies,
 )
+
 
 args = parse_args()
 
@@ -43,6 +44,12 @@ request = Request(
 client = Client()
 
 response = client.send(request)
+
+if args.cookie_jar:
+    save_cookies(
+        response.get_cookies(),
+        args.cookie_jar
+    )
 
 output = format_response(request, response)
 

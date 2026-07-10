@@ -1,15 +1,23 @@
-def format_response(response):
+def format_response(request, response):
     output = ""
 
-    output += f"HTTP Status: {response.get_status_code()} {response.get_reason()}\n\n"
+    if request.verbose:
+        output += f"> {request.method} {request.url}\n"
 
-    output += "Headers:\n"
+        for key, value in request.headers.items():
+            output += f"> {key}: {value}\n"
 
-    for key, value in response.get_headers().items():
-        output += f"{key}: {value}\n"
+        output += "\n"
 
-    output += "\nbody:\n"
+        output += f"< HTTP {response.get_status_code()} {response.get_reason()}\n"
 
-    output += response.get_body()
+
+        for key, value in response.get_headers().items():
+            output += f"< {key}: {value}\n"
+
+        output += "\n"
+
+    if not request.head:
+        output += response.get_body()
 
     return output

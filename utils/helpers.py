@@ -1,3 +1,5 @@
+from utils.errors import FileUploadException
+
 def parse_headers(headers):
     parsed_headers = {}
 
@@ -44,7 +46,14 @@ def parse_forms(forms):
 
         if value.startswith("@"):
             filename = value[1:]
-            files[key] = open(filename, "rb")
+
+            try:
+                files[key] = open(filename, "rb")
+            
+            except FileNotFoundError:
+                raise FileUploadException(
+                    f"File not found: {filename}"
+                )
         
         else:
             data[key] = value

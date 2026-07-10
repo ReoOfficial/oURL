@@ -52,3 +52,8 @@ class Client:
             raise ConnectionException(
                 "Connection failed"
             )
+        
+        finally:
+            if request.form_files:
+                for file in request.form_files.values():
+                    file.close()

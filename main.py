@@ -105,5 +105,5 @@ except ConnectionException:
     print("mycurl: Connection failed")
 
 except FileUploadException as e :
-    print("mycurl: {e}")
+    print(f"mycurl: {e}")
     sys.exit(1)

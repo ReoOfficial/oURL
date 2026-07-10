@@ -43,6 +43,6 @@ class Request:
         self.cookie_jar = cookie_jar
 
         self.form_data = form_data
-        self.form_files = form_files
+        self.form_files = form_files or {}
 
         

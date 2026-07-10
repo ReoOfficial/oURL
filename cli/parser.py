@@ -15,7 +15,7 @@ def parse_args():
         "-X",
         "--request",
         dest="method",
-        default="GET",
+        default=None,
         help="HTTP Method"
     )
 

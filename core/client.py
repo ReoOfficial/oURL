@@ -10,8 +10,11 @@ class Client:
         
         headers = request.headers.copy()
 
-        if request.user_agent:
-            headers["User-Agent"] = request.user_agent
+        headers["User-Agent"] = (
+            request.user_agent
+            if request.user_agent
+            else "MyCurl/1.0"
+        )
 
         auth = request.auth
 

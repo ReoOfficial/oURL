@@ -15,6 +15,14 @@ from utils.helpers import (
 
 args = parse_args()
 
+if args.method is None:
+
+    if args.data or args.form:
+        args.method = "POST"
+    
+    else:
+        args.method = "GET"
+
 validate(args)
 
 form_data, form_files = parse_forms(args.form)

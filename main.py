@@ -1,9 +1,14 @@
+import sys
+
 from cli.parser import parse_args
 from cli.validator import validate
+
 from core.request import Request
 from core.client import Client
+
 from output.formatter import format_response
 from output.printer import print_response
+
 from utils.helpers import (
     parse_headers,
     parse_auth,
@@ -12,56 +17,93 @@ from utils.helpers import (
     save_cookies,
 )
 
-
-args = parse_args()
-
-if args.method is None:
-
-    if args.data or args.form:
-        args.method = "POST"
-    
-    else:
-        args.method = "GET"
-
-validate(args)
-
-form_data, form_files = parse_forms(args.form)
-
-request = Request(
-    method=args.method,
-    url=args.url,
-    headers=parse_headers(args.header),
-    body=args.data,
-    timeout=args.max_time,
-
-    verbose=args.verbose,
-    follow_redirects=args.location,
-    insecure=args.insecure,
-
-    auth=parse_auth(args.user),
-    user_agent=args.user_agent,
-
-    output=args.output,
-    head=args.head,
-
-    cookies=parse_cookies(args.cookie),
-    cookie_jar=args.cookie_jar,
-
-    form_data=form_data,
-    form_files=form_files,
+from utils.errors import (
+    InvalidURLException,
+    InvalidMethodException,
+    InvalidHeaderException,
+    InvalidTimeoutException,
+    RequestTimeoutException,
+    ConnectionException,
+    FileUploadException,
 )
 
+try:
+    args = parse_args()
 
-client = Client()
+    if args.method is None:
 
-response = client.send(request)
+        if args.data or args.form:
+            args.method = "POST"
+    
+        else:
+            args.method = "GET"
 
-if args.cookie_jar:
-    save_cookies(
-        response.get_cookies(),
-        args.cookie_jar
+    validate(args)
+
+    form_data, form_files = parse_forms(args.form)
+
+    request = Request(
+        method=args.method,
+        url=args.url,
+        headers=parse_headers(args.header),
+        body=args.data,
+        timeout=args.max_time,
+
+        verbose=args.verbose,
+        follow_redirects=args.location,
+        insecure=args.insecure,
+
+        auth=parse_auth(args.user),
+        user_agent=args.user_agent,
+
+        output=args.output,
+        head=args.head,
+
+        cookies=parse_cookies(args.cookie),
+        cookie_jar=args.cookie_jar,
+
+        form_data=form_data,
+        form_files=form_files,
     )
 
-output = format_response(request, response)
 
-print_response(output, args.output)
+    client = Client()
+
+    response = client.send(request)
+
+    if args.cookie_jar:
+        save_cookies(
+            response.get_cookies(),
+            args.cookie_jar
+        )
+
+    output = format_response(request, response)
+
+    print_response(output, args.output)
+
+except InvalidURLException:
+    print("mycurl: Invalid URL")
+    sys.exit(1)
+
+except InvalidMethodException:
+    print("mycurl: Invalid HTTP method")
+    sys.exit(1)
+
+except InvalidHeaderException:
+    print("mycurl: Invalid header format")
+    sys.exit(1)
+
+except InvalidTimeoutException as e:
+    print(f"mycurl: {e}")
+    sys.exit(1)
+
+except RequestTimeoutException:
+    print("mycurl: Request timed out")
+    sys.exit(1)
+
+except ConnectionException:
+    print("mycurl: Connection failed")
+
+except FileUploadException as e :
+    print("mycurl: {e}")
+    sys.exit(1)

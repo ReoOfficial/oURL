@@ -15,3 +15,6 @@ class RequestTimeoutException(Exception):
 
 class ConnectionException(Exception):
     pass
+
+class FileUploadException(Exception):
+    pass

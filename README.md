@@ -277,6 +277,41 @@ The next development milestone is an automated test suite covering:
 * Response formatting
 * Timeout and connection handling
 
+## Testing
+
+MyCurl includes 56 automated tests covering:
+
+* Command-line argument parsing
+* URL, HTTP method, header, and timeout validation
+* Header, authentication, cookie, and form parsing
+* Request configuration and method selection
+* HEAD request behavior
+* Default and custom request headers
+* Response formatting
+* Verbose output
+* Timing and response-size output
+* Timeout and connection-error handling
+* Uploaded-file cleanup
+
+Run the complete test suite:
+
+```bash
+python -m pytest -v
+```
+
+Run the tests with coverage:
+
+```bash
+python -m pytest --cov=. --cov-report=term-missing
+```
+
+Current test results:
+
+```text
+56 passed
+85% total coverage
+```
+
 ## Current Limitations
 
 * The project currently focuses on HTTP and HTTPS.

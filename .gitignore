@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+
+.pytest_cache/
+.coverage
+htmlcov/
+
+.venv/
+venv/
+
+response.txt
+cookies.txt

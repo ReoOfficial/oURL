@@ -34,7 +34,7 @@ class Client:
         try:
             response = requests.request(
 
-                method=request.method,
+                method=method,
                 url=request.url,
                 headers=headers,
 

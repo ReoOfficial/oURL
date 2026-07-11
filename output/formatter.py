@@ -20,7 +20,9 @@ def format_response(request, response):
         if parsed.query:
             path += f"?{parsed.query}"
 
-        output += f"> {request.method} {path} HTTP/1.1\n"
+        method = "HEAD" if request.head else request.method
+
+        output += f"> {method} {path} HTTP/1.1\n"
 
         output += f"> Host: {parsed.netloc}\n"
 
@@ -41,7 +43,7 @@ def format_response(request, response):
 
         if request.body:
             output += "\n"
-            output += request.body
+            output += str(request.body)
             output += "\n"
 
         output += "\n"
@@ -55,6 +57,19 @@ def format_response(request, response):
 
         for key, value in response.get_headers().items():
             output += f"< {key}: {value}\n"
+
+        output += "\n"
+
+    elif request.head:
+
+        output+= (
+            f"HTTP/1.1 "
+            f"{response.get_status_code()} "
+            f"{response.get_reason()}\n"
+        )
+
+        for key, value in response.get_headers().items():
+            output += f"{key}: {value}\n"
 
         output += "\n"
 

@@ -1,5 +1,12 @@
+import json
 from urllib.parse import urlparse
 
+def format_body(body):
+    try:
+        parsed = json.loads(body)
+        return json.dumps(parsed, indent=4, ensure_ascii=False)
+    except (json.JSONDecodeError, TypeError):
+        return body
 
 def format_response(request, response):
     output = ""
@@ -52,6 +59,6 @@ def format_response(request, response):
         output += "\n"
 
     if not request.head:
-        output += response.get_body()
+        output += format_body(response.get_body())
 
     return output

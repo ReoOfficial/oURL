@@ -16,6 +16,14 @@ class Client:
             else "MyCurl/1.0"
         )
 
+        if (
+            request.body is not None
+            and not request.form_data
+            and not request.form_files
+            and not any(key.lower() == "content-type" for key in headers)
+        ):
+            headers["Content-Type"] = "application/x-www-form-urlencoded"
+
         auth = request.auth
 
         method = request.method
@@ -43,7 +51,7 @@ class Client:
 
             return Response(
                 response,
-                sent_headers=headers,
+                sent_headers=response.request.headers,
             )
         
         except requests.exceptions.Timeout:

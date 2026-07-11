@@ -7,6 +7,7 @@ class Response:
         
         self.headers = response.headers
         self.body = response.text
+        self.content = response.content
 
         self.url = response.url
         self.elapsed = response.elapsed
@@ -51,3 +52,6 @@ class Response:
     
     def get_elapsed_seconds(self):
         return self.elapsed.total_seconds()
+    
+    def get_size(self):
+        return len(self.content)

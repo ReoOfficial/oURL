@@ -63,5 +63,6 @@ def format_response(request, response):
 
     if request.verbose:
         output += f"\n\nTime: {response.get_elapsed_seconds():.3f}s"
+        output += f"\nSize: {response.get_size()} bytes"
 
     return output

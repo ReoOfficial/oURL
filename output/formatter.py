@@ -61,4 +61,7 @@ def format_response(request, response):
     if not request.head:
         output += format_body(response.get_body())
 
+    if request.verbose:
+        output += f"\n\nTime: {response.get_elapsed_seconds():.3f}s"
+
     return output

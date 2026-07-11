@@ -48,3 +48,6 @@ class Response:
     
     def get_sent_headers(self):
         return self.sent_headers
+    
+    def get_elapsed_seconds(self):
+        return self.elapsed.total_seconds()

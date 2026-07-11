@@ -7,26 +7,41 @@ def format_response(request, response):
     if request.verbose:
 
         parsed = urlparse(request.url)
+
         path = parsed.path or "/"
+
+        if parsed.query:
+            path += f"?{parsed.query}"
 
         output += f"> {request.method} {path} HTTP/1.1\n"
 
         output += f"> Host: {parsed.netloc}\n"
 
-        if request.user_agent:
-            output += f"> User-Agent: {request.user_agent}\n"
-        else:
-            output += "> User-Agent: MyCurl/1.0\n"
+        headers = response.get_sent_headers()
 
-        output += "> Accpet: */*\n"
+        if "User-Agent" in headers:
+            output += f"> User-Agent: {headers['User-Agent']}\n"
 
-        for key, value in request.headers.items():
+        if "Accept" in headers:
+            output += f"> Accept: {headers['Accept']}\n"
+
+        for key, value in headers.items():
+
+            if key in ("User-Agent", "Accept"):
+                continue
+            
             output += f"> {key}: {value}\n"
+
+        if request.body:
+            output += "\n"
+            output += request.body
+            output += "\n"
 
         output += "\n"
 
         output += (
-            f"< HTTP {response.get_status_code()} "
+            f"< HTTP/1.1 "
+            f"{response.get_status_code()} "
             f"{response.get_reason()}\n"
         )
 

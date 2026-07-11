@@ -81,16 +81,16 @@ try:
 
     print_response(output, args.output)
 
-except InvalidURLException:
-    print("mycurl: Invalid URL")
+except InvalidURLException as e:
+    print(f"mycurl: {e}")
     sys.exit(1)
 
-except InvalidMethodException:
-    print("mycurl: Invalid HTTP method")
+except InvalidMethodException as e:
+    print(f"mycurl: {e}")
     sys.exit(1)
 
-except InvalidHeaderException:
-    print("mycurl: Invalid header format")
+except InvalidHeaderException as e:
+    print(f"mycurl: {e}")
     sys.exit(1)
 
 except InvalidTimeoutException as e:

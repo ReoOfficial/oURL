@@ -23,13 +23,18 @@ def validate(args):
 def validate_url(url):
     parsed = urlparse(url)
 
-    if not parsed.scheme or not parsed.netloc:
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
         raise InvalidURLException(
-            f"Invalid URL: {url}"
+            f"Invalid URL: {url}\n"
+            "Expected an HTTP or HTTPS URL."
         )
     
 
 def validate_method(method):
+    # No -X means the client will use its default method
+    if method is None:
+        return
+
     if method.upper() not in SUPPORTED_METHODS:
         raise InvalidMethodException(
             f"Unsupported method: {method}"
@@ -40,7 +45,16 @@ def validate_headers(headers):
     for header in headers:
         if ":" not in header:
             raise InvalidHeaderException(
-                f"Invalid header format{header}"
+                f"Invalid header format: {header}\n"
+                "Expected: Key: Value"
+            )
+
+        name, _ = header.split(":", 1)
+
+        if not name.strip():
+            raise InvalidHeaderException(
+                f"Invalid header format: {header}\n"
+                "Header name cannot be empty."
             )
         
 
@@ -53,7 +67,7 @@ def validate_timeout(timeout):
 def validate_auth(auth):
     if auth and ":" not in auth:
         raise InvalidHeaderException(
-            "Authentication must be username:password"
+            "Authentication must use the format username:password"
         )
     
 def validate_forms(forms):
@@ -61,4 +75,5 @@ def validate_forms(forms):
         if "=" not in form:
             raise InvalidHeaderException(
                 f"Invalid form format: {form}"
+                "Expected: name=value or name=@filename"
             )

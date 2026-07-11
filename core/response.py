@@ -8,7 +8,7 @@ class Response:
         self.headers = response.headers
         self.body = response.text
 
-        self.url = response.url,
+        self.url = response.url
         self.elapsed = response.elapsed
 
         self.cookies = response.cookies

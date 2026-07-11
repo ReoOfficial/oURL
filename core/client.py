@@ -41,7 +41,10 @@ class Client:
                 cookies=request.cookies 
             )
 
-            return Response(response)
+            return Response(
+                response,
+                sent_headers=headers,
+            )
         
         except requests.exceptions.Timeout:
             raise RequestTimeoutException(

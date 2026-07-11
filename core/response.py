@@ -1,6 +1,6 @@
 class Response:
 
-    def __init__(self, response):
+    def __init__(self, response, sent_headers=None):
 
         self.status_code = response.status_code
         self.reason = response.reason
@@ -13,6 +13,8 @@ class Response:
 
         self.cookies = response.cookies
         self.history = response.history
+
+        self.sent_headers = sent_headers or {}
 
     def get_status_code(self):
         return self.status_code
@@ -43,3 +45,6 @@ class Response:
     
     def get_form_files(self):
         return self.form_files 
+    
+    def get_sent_headers(self):
+        return self.sent_headers

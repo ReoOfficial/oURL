@@ -1,11 +1,11 @@
 from utils.errors import FileWriteException
 
 
-def print_response(output, filename):
+def print_response(output, filename=None, content=None):
     if filename:
         try:
-            with open(filename, "w", encoding="utf-8") as file:
-                file.write(output)
+            with open(filename, "wb") as file:
+                file.write(content)
 
         except OSError as error:
             raise FileWriteException(

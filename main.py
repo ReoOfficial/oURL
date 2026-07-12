@@ -82,7 +82,11 @@ try:
 
     output = format_response(request, response)
 
-    print_response(output, args.output)
+    print_response(
+        output,
+        args.output,
+        response.get_content(),
+        )
 
 except InvalidURLException as e:
     print(f"mycurl: {e}")

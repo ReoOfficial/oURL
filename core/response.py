@@ -2,6 +2,8 @@ class Response:
 
     def __init__(self, response, sent_headers=None):
 
+        self.content = response.content
+
         self.status_code = response.status_code
         self.reason = response.reason
         
@@ -55,3 +57,6 @@ class Response:
     
     def get_size(self):
         return len(self.content)
+    
+    def get_content(self):
+        return self.content

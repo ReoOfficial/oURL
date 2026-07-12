@@ -107,8 +107,8 @@ def parse_args():
 
     connection_group.add_argument(
         "--max-time",
-        type=int,
-        default=15,
+        type=float,
+        default=15.0,
         metavar="SECONDS",
         help="Maximum request time in seconds (default: 15)",
     )

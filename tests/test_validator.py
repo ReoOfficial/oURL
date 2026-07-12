@@ -83,3 +83,6 @@ def test_valid_timeout():
 def test_invalid_timeout(timeout):
     with pytest.raises(InvalidTimeoutException):
         validate_timeout(timeout)
+
+def test_valid_decimal_timeout():
+    assert validate_timeout(5.5) is None

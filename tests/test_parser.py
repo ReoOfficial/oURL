@@ -29,7 +29,25 @@ def test_default_values(monkeypatch):
     assert args.verbose is False
     assert args.location is False
     assert args.insecure is False
-    assert args.max_time == 15
+    assert args.max_time == 15.0
+
+
+def test_decimal_timeout(monkeypatch):
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "mycurl",
+            "--max-time",
+            "5.5",
+            "https://example.com",
+        ],
+    )
+
+    args = parse_args()
+
+    assert args.max_time == 5.5
+    assert isinstance(args.max_time, float)
 
 
 def test_custom_method(monkeypatch):

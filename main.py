@@ -28,6 +28,7 @@ from utils.errors import (
     InvalidCookieException,
     FileWriteException,
     TooManyRedirectsException,
+    TLSException,
 )
 
 try:
@@ -110,6 +111,7 @@ except RequestTimeoutException:
 
 except ConnectionException:
     print("mycurl: Connection failed")
+    sys.exit(1)
 
 except FileUploadException as e :
     print(f"mycurl: {e}")
@@ -124,5 +126,9 @@ except FileWriteException as error:
     sys.exit(1)
 
 except TooManyRedirectsException as error:
+    print(f"mycurl: {error}")
+    sys.exit(1)
+
+except TLSException as error:
     print(f"mycurl: {error}")
     sys.exit(1)

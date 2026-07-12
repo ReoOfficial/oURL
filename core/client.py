@@ -6,6 +6,7 @@ from utils.errors import (
     RequestTimeoutException, 
     ConnectionException,
     TooManyRedirectsException,
+    TLSException,
 )
 
 class Client:
@@ -67,6 +68,11 @@ class Client:
             raise TooManyRedirectsException(
                 "Too many redirects"
             ) from error
+        
+        except requests.exceptions.SSLError as error:
+            raise TLSException(
+                "TLS certificate verification failed"
+            )from error
     
         except requests.exceptions.ConnectionError as error:
             raise ConnectionException(

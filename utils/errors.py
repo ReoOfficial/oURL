@@ -27,3 +27,6 @@ class FileWriteException(Exception):
 
 class TooManyRedirectsException(Exception):
     pass
+
+class TLSException(Exception):
+    pass

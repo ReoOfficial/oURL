@@ -1,5 +1,7 @@
 import pytest
 
+from requests.cookies import RequestsCookieJar
+
 from utils.helpers import save_cookies
 from utils.errors import (
     FileWriteException,
@@ -138,3 +140,43 @@ def test_parse_form_data():
     }
 
     assert files == {}
+
+
+def test_save_cookies_successfully(tmp_path):
+    cookies = RequestsCookieJar()
+
+    cookies.set(
+        "session",
+        "abc123",
+        domain=".example.com",
+        path="/",
+        secure=True,
+        expires=1234567890,
+    )
+
+    cookie_file = tmp_path / "cookies.txt"
+
+    save_cookies(
+        cookies,
+        str(cookie_file),
+    )
+
+    content = cookie_file.read_text(
+        encoding="utf-8",
+    )
+
+    assert "# Netscape HTTP Cookie File" in content
+    assert ".example.com" in content
+    assert "session" in content
+    assert "abc123" in content
+
+
+def test_save_cookies_without_filename():
+    cookies = RequestsCookieJar()
+
+    result = save_cookies(
+        cookies,
+        None,
+    )
+
+    assert result is None

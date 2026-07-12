@@ -41,13 +41,7 @@ class Response:
         return self.cookies
     
     def get_history(self):
-        return self.history
-    
-    def get_form_data(self):
-        return self.form_data 
-    
-    def get_form_files(self):
-        return self.form_files 
+        return self.history 
     
     def get_sent_headers(self):
         return self.sent_headers

@@ -25,3 +25,12 @@ def test_binary_output_is_written_exactly(tmp_path):
     )
 
     assert output_file.read_bytes() == binary_content
+
+def test_print_response_to_terminal(capsys):
+    print_response(
+        "Hello from MyCurl",
+    )
+
+    captured = capsys.readouterr()
+
+    assert captured.out == "Hello from MyCurl\n"

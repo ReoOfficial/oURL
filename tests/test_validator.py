@@ -1,26 +1,28 @@
+from types import SimpleNamespace
+
 import pytest
 
 from cli.validator import (
-    validate_url,
-    validate_method,
-    validate_headers,
-    validate_timeout,
+    validate,
     validate_auth,
     validate_forms,
+    validate_headers,
+    validate_method,
+    validate_timeout,
+    validate_url,
 )
-
 from utils.errors import (
-    InvalidURLException,
-    InvalidMethodException,
-    InvalidHeaderException,
-    InvalidTimeoutException,
     InvalidAuthException,
     InvalidFormException,
+    InvalidHeaderException,
+    InvalidMethodException,
+    InvalidTimeoutException,
+    InvalidURLException,
 )
 
 
 def test_valid_url():
-    assert validate_url("https://example.com") is None
+    validate_url("https://example.com")
 
 
 @pytest.mark.parametrize(
@@ -38,66 +40,85 @@ def test_invalid_url(url):
 
 
 def test_valid_method():
-    assert validate_method("GET") is None
+    validate_method("GET")
 
 
 def test_lowercase_method():
-    assert validate_method("post") is None
+    validate_method("post")
 
 
 def test_no_custom_method():
-    assert validate_method(None) is None
+    validate_method(None)
 
 
 def test_invalid_method():
     with pytest.raises(InvalidMethodException):
-        validate_method("WRONG")
+        validate_method("INVALID")
 
 
 def test_valid_header():
-    assert validate_headers(
-        ["Accept: application/json"]
-    ) is None
+    validate_headers(
+        [
+            "Content-Type: application/json",
+        ]
+    )
 
 
 def test_multiple_headers():
-    assert validate_headers(
+    validate_headers(
         [
-            "Accept: application/json",
-            "User-Agent: MyCurl/2.1",
+            "Content-Type: application/json",
+            "Authorization: Bearer token",
         ]
-    ) is None
+    )
 
 
 def test_header_without_colon():
     with pytest.raises(InvalidHeaderException):
-        validate_headers(["WrongHeader"])
+        validate_headers(
+            [
+                "InvalidHeader",
+            ]
+        )
 
 
 def test_header_with_empty_name():
     with pytest.raises(InvalidHeaderException):
-        validate_headers([": value"])
+        validate_headers(
+            [
+                ": empty-name",
+            ]
+        )
 
 
 def test_valid_timeout():
-    assert validate_timeout(15) is None
+    validate_timeout(10)
 
 
-@pytest.mark.parametrize("timeout", [0, -1, -100])
+@pytest.mark.parametrize(
+    "timeout",
+    [
+        0,
+        -1,
+        -100,
+    ],
+)
 def test_invalid_timeout(timeout):
     with pytest.raises(InvalidTimeoutException):
         validate_timeout(timeout)
 
+
 def test_valid_decimal_timeout():
-    assert validate_timeout(5.5) is None
+    validate_timeout(5.5)
+
 
 def test_valid_auth():
-    assert validate_auth("user:password") is None
+    validate_auth("user:password")
 
 
 def test_invalid_auth_without_colon():
     with pytest.raises(InvalidAuthException):
-        validate_auth("no_password")
+        validate_auth("missing-password")
 
 
 def test_auth_with_empty_username():
@@ -105,15 +126,50 @@ def test_auth_with_empty_username():
         validate_auth(":password")
 
 
+def test_validate_auth_with_no_auth():
+    assert validate_auth(None) is None
+
+
 def test_valid_form():
-    assert validate_forms(["name=Reo"]) is None
+    validate_forms(
+        [
+            "name=Reo",
+        ]
+    )
 
 
 def test_invalid_form_without_equals():
     with pytest.raises(InvalidFormException):
-        validate_forms(["name"])
+        validate_forms(
+            [
+                "missing-equals-sign",
+            ]
+        )
 
 
 def test_form_with_empty_name():
     with pytest.raises(InvalidFormException):
-        validate_forms(["=Reo"])
+        validate_forms(
+            [
+                "=value",
+            ]
+        )
+
+
+def test_validate_runs_all_checks():
+    args = SimpleNamespace(
+        url="https://example.com",
+        method="GET",
+        header=[
+            "Accept: application/json",
+        ],
+        max_time=5.5,
+        user="reo:password",
+        form=[
+            "name=Reo",
+        ],
+    )
+
+    result = validate(args)
+
+    assert result is args

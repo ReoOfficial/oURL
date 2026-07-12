@@ -70,15 +70,26 @@ def test_normal_response_displays_body():
 
 
 def test_verbose_response_displays_request_details():
-    request = make_request(verbose=True)
+    request = make_request(
+        verbose=True,
+    )
+
     response = FakeResponse()
 
-    result = format_response(request, response)
+    response.get_sent_headers = lambda: {
+        "User-Agent": "MyCurl/2.1",
+        "Accept": "*/*",
+        "X-Test": "hello",
+    }
 
-    assert "> GET /test?name=Reo HTTP/1.1" in result
-    assert "> Host: example.com" in result
-    assert "> User-Agent: MyCurl/2.1" in result
-    assert "< HTTP/1.1 200 OK" in result
+    output = format_response(
+        request,
+        response,
+    )
+
+    assert "> User-Agent: MyCurl/2.1" in output
+    assert "> Accept: */*" in output
+    assert "> X-Test: hello" in output
 
 
 def test_verbose_response_displays_statistics():

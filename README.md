@@ -26,6 +26,13 @@ The project recreates commonly used cURL functionality while demonstrating comma
 * JSON response pretty-printing
 * Response output files
 * Structured validation and custom exceptions
+- Binary-safe response downloads
+- Decimal timeout values
+- Dedicated TLS certificate errors
+- Redirect-limit error handling
+- Safe output and cookie-file error handling
+- Upload-file resource cleanup
+- Consistent non-zero error exit codes
 
 ## Requirements
 
@@ -207,8 +214,10 @@ Disabling certificate verification should only be used for development or testin
 
 ```text
 MyCurl/
+├── .gitignore
 ├── main.py
 ├── README.md
+├── PROJECT_DOCUMENTATION.md
 ├── requirements.txt
 │
 ├── cli/
@@ -224,6 +233,15 @@ MyCurl/
 ├── output/
 │   ├── formatter.py
 │   └── printer.py
+│
+├── tests/
+│   ├── test_cli.py
+│   ├── test_client.py
+│   ├── test_formatter.py
+│   ├── test_helpers.py
+│   ├── test_parser.py
+│   ├── test_printer.py
+│   └── test_validator.py
 │
 └── utils/
     ├── errors.py
@@ -279,7 +297,7 @@ The next development milestone is an automated test suite covering:
 
 ## Testing
 
-MyCurl includes 56 automated tests covering:
+MyCurl includes 82 automated tests covering:
 
 * Command-line argument parsing
 * URL, HTTP method, header, and timeout validation
@@ -292,6 +310,12 @@ MyCurl includes 56 automated tests covering:
 * Timing and response-size output
 * Timeout and connection-error handling
 * Uploaded-file cleanup
+- End-to-end CLI behavior and exit codes
+- Malformed cookie handling
+- TLS and redirect errors
+- Binary file output
+- Output and cookie-file failures
+- Multiple-upload cleanup
 
 Run the complete test suite:
 
@@ -308,6 +332,7 @@ python -m pytest --cov=. --cov-report=term-missing
 Current test results:
 
 ```text
+82 automated tests
 82 passed
 87% total coverage
 ```
@@ -320,9 +345,7 @@ Current test results:
 
 ## Future Improvements
 
-* Automated tests with pytest
 * Continuous integration with GitHub Actions
-* Binary-safe response output
 * Standard output and standard error separation
 * Installable command-line package
 * Additional cURL-compatible options

@@ -7,6 +7,7 @@ from utils.errors import (
     ConnectionException,
     TooManyRedirectsException,
     TLSException,
+    RequestFailedException,
 )
 
 class Client:
@@ -78,6 +79,11 @@ class Client:
             raise ConnectionException(
                 "Connection failed"
             ) from error
+        
+        except requests.exceptions.RequestException as error:
+            raise RequestFailedException(
+                f"Request failed: {error}"
+            )from error
         
         finally:
             if request.form_files:

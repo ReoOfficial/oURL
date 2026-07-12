@@ -36,3 +36,6 @@ class InvalidAuthException(Exception):
 
 class InvalidFormException(Exception):
     pass
+
+class RequestFailedException(Exception):
+    pass

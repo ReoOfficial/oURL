@@ -13,8 +13,27 @@ from utils.errors import (
     ConnectionException,
     TooManyRedirectsException,
     TLSException,
+    RequestFailedException,
 )
 
+
+def test_unexpected_request_exception_is_converted(monkeypatch):
+    def fake_request(**kwargs):
+        raise requests.exceptions.RequestException(
+            "Unexpected transport error"
+        )
+
+    monkeypatch.setattr(
+        client_module.requests,
+        "request",
+        fake_request,
+    )
+
+    with pytest.raises(
+        RequestFailedException,
+        match="Request failed: Unexpected transport error",
+    ):
+        Client().send(make_request())
 
 def test_ssl_exception_is_converted(monkeypatch):
     def fake_request(**kwargs):

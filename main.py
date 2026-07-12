@@ -31,6 +31,7 @@ from utils.errors import (
     TLSException,
     InvalidAuthException,
     InvalidFormException,
+    RequestFailedException,
 )
 
 try:
@@ -141,3 +142,7 @@ except InvalidAuthException as error:
 
 except InvalidFormException as error:
     print(f"mycurl: {error}")
+
+except RequestFailedException as error:
+    print(f"mycurl: {error}")
+    sys.exit(1)

@@ -24,7 +24,7 @@ def parse_args():
     parser.add_argument(
         "--version",
         action="version",
-        version="MyCurl 2.0",
+        version="MyCurl 2.1",
     )
 
     target_group = parser.add_argument_group("target")

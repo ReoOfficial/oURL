@@ -142,6 +142,7 @@ except InvalidAuthException as error:
 
 except InvalidFormException as error:
     print(f"mycurl: {error}")
+    sys.exit(1)
 
 except RequestFailedException as error:
     print(f"mycurl: {error}")

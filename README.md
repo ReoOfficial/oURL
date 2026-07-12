@@ -308,8 +308,8 @@ python -m pytest --cov=. --cov-report=term-missing
 Current test results:
 
 ```text
-56 passed
-85% total coverage
+82 passed
+87% total coverage
 ```
 
 ## Current Limitations

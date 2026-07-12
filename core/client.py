@@ -19,7 +19,7 @@ class Client:
         headers["User-Agent"] = (
             request.user_agent
             if request.user_agent
-            else "MyCurl/2.0"
+            else "MyCurl/2.1"
         )
 
         if (

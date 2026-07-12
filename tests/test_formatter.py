@@ -20,7 +20,7 @@ class FakeResponse:
 
     def get_sent_headers(self):
         return {
-            "User-Agent": "MyCurl/2.0",
+            "User-Agent": "MyCurl/2.1",
             "Accept": "*/*",
         }
 
@@ -77,7 +77,7 @@ def test_verbose_response_displays_request_details():
 
     assert "> GET /test?name=Reo HTTP/1.1" in result
     assert "> Host: example.com" in result
-    assert "> User-Agent: MyCurl/2.0" in result
+    assert "> User-Agent: MyCurl/2.1" in result
     assert "< HTTP/1.1 200 OK" in result
 
 

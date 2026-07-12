@@ -64,7 +64,7 @@ def test_multiple_headers():
     assert validate_headers(
         [
             "Accept: application/json",
-            "User-Agent: MyCurl/2.0",
+            "User-Agent: MyCurl/2.1",
         ]
     ) is None
 

@@ -25,7 +25,7 @@ def test_version_command():
     result = run_mycurl("--version")
 
     assert result.returncode == 0
-    assert "MyCurl 2.0" in result.stdout
+    assert "MyCurl 2.1" in result.stdout
 
 
 def test_help_command():

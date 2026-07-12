@@ -170,7 +170,7 @@ def test_default_user_agent(monkeypatch):
 
     assert (
         captured["headers"]["User-Agent"]
-        == "MyCurl/2.0"
+        == "MyCurl/2.1"
     )
 
 
@@ -314,7 +314,7 @@ def test_request_options_are_forwarded(monkeypatch):
 
 def test_prepared_headers_are_stored(monkeypatch):
     prepared_headers = {
-        "User-Agent": "MyCurl/2.0",
+        "User-Agent": "MyCurl/2.1",
         "Content-Length": "8",
         "Content-Type": (
             "application/x-www-form-urlencoded"

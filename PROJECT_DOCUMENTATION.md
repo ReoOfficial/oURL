@@ -1,4 +1,4 @@
-# MyCurl 2.0 — Technical Documentation
+# MyCurl 2.1 — Technical Documentation
 
 **Repository:** `ReoOfficial/oURL`  
 **Language:** Python  
@@ -288,7 +288,7 @@ It creates an `ArgumentParser`, registers every supported option, and returns a 
 
 #### Metadata
 
-- `--version`: prints `MyCurl 2.0`.
+- `--version`: prints `MyCurl 2.1`.
 - `--help`: generated automatically by argparse.
 
 ### Important `argparse` concepts used
@@ -476,7 +476,7 @@ Client.send(request)
 1. Copies custom headers so the original request dictionary is not modified directly.
 2. Sets the User-Agent:
    - custom value from `-A`, or
-   - default `MyCurl/2.0`.
+   - default `MyCurl/2.1`.
 3. Adds `Content-Type: application/x-www-form-urlencoded` when:
    - a body exists;
    - the request is not using multipart form data;

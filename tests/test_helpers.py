@@ -68,12 +68,12 @@ def test_parse_single_header():
 def test_parse_multiple_headers():
     result = parse_headers([
         "Accept: application/json",
-        "User-Agent: MyCurl/2.0",
+        "User-Agent: MyCurl/2.1",
     ])
 
     assert result == {
         "Accept": "application/json",
-        "User-Agent": "MyCurl/2.0",
+        "User-Agent": "MyCurl/2.1",
     }
 
 

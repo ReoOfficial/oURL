@@ -25,6 +25,8 @@ from utils.errors import (
     RequestTimeoutException,
     ConnectionException,
     FileUploadException,
+    InvalidCookieException,
+    FileWriteException,
 )
 
 try:
@@ -106,4 +108,12 @@ except ConnectionException:
 
 except FileUploadException as e :
     print(f"mycurl: {e}")
+    sys.exit(1)
+
+except InvalidCookieException as e:
+    print(f"mycurl: {e}")
+    sys.exit(1)
+
+except FileWriteException as error:
+    print(f"mycurl: {error}")
     sys.exit(1)

@@ -18,3 +18,9 @@ class ConnectionException(Exception):
 
 class FileUploadException(Exception):
     pass
+
+class InvalidCookieException(Exception):
+    pass
+
+class FileWriteException(Exception):
+    pass

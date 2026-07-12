@@ -1,11 +1,33 @@
 import pytest
 
+from utils.helpers import save_cookies
+from utils.errors import FileWriteException
+
+from utils.errors import InvalidCookieException
+
 from utils.helpers import (
     parse_headers,
     parse_auth,
     parse_cookies,
     parse_forms,
 )
+
+
+def test_invalid_cookie_jar_path():
+    with pytest.raises(FileWriteException):
+        save_cookies(
+            [],
+            "folder_that_does_not_exist/cookies.txt",
+        )
+
+def test_malformed_cookie():
+    with pytest.raises(InvalidCookieException):
+        parse_cookies("malformed_cookie")
+
+
+def test_cookie_with_empty_name():
+    with pytest.raises(InvalidCookieException):
+        parse_cookies("=abc123")
 
 
 def test_parse_single_header():

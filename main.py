@@ -29,6 +29,8 @@ from utils.errors import (
     FileWriteException,
     TooManyRedirectsException,
     TLSException,
+    InvalidAuthException,
+    InvalidFormException,
 )
 
 try:
@@ -132,3 +134,10 @@ except TooManyRedirectsException as error:
 except TLSException as error:
     print(f"mycurl: {error}")
     sys.exit(1)
+
+except InvalidAuthException as error:
+    print(f"mycurl: {error}")
+    sys.exit(1)
+
+except InvalidFormException as error:
+    print(f"mycurl: {error}")

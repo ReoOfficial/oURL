@@ -5,6 +5,8 @@ from cli.validator import (
     validate_method,
     validate_headers,
     validate_timeout,
+    validate_auth,
+    validate_forms,
 )
 
 from utils.errors import (
@@ -12,6 +14,8 @@ from utils.errors import (
     InvalidMethodException,
     InvalidHeaderException,
     InvalidTimeoutException,
+    InvalidAuthException,
+    InvalidFormException,
 )
 
 
@@ -86,3 +90,30 @@ def test_invalid_timeout(timeout):
 
 def test_valid_decimal_timeout():
     assert validate_timeout(5.5) is None
+
+def test_valid_auth():
+    assert validate_auth("user:password") is None
+
+
+def test_invalid_auth_without_colon():
+    with pytest.raises(InvalidAuthException):
+        validate_auth("no_password")
+
+
+def test_auth_with_empty_username():
+    with pytest.raises(InvalidAuthException):
+        validate_auth(":password")
+
+
+def test_valid_form():
+    assert validate_forms(["name=Reo"]) is None
+
+
+def test_invalid_form_without_equals():
+    with pytest.raises(InvalidFormException):
+        validate_forms(["name"])
+
+
+def test_form_with_empty_name():
+    with pytest.raises(InvalidFormException):
+        validate_forms(["=Reo"])

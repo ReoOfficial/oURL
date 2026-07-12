@@ -30,3 +30,9 @@ class TooManyRedirectsException(Exception):
 
 class TLSException(Exception):
     pass
+
+class InvalidAuthException(Exception):
+    pass
+
+class InvalidFormException(Exception):
+    pass

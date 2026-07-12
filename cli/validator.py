@@ -7,6 +7,8 @@ from utils.errors import (
     InvalidMethodException,
     InvalidHeaderException,
     InvalidTimeoutException,
+    InvalidAuthException,
+    InvalidFormException
 )
 
 def validate(args):
@@ -65,15 +67,35 @@ def validate_timeout(timeout):
         )
     
 def validate_auth(auth):
-    if auth and ":" not in auth:
-        raise InvalidHeaderException(
-            "Authentication must use the format username:password"
+    if not auth:
+        return
+
+    if ":" not in auth:
+        raise InvalidAuthException(
+            "Invalid authentication format\n"
+            "Expected: username:password"
+        )
+
+    username, _ = auth.split(":", 1)
+
+    if not username.strip():
+        raise InvalidAuthException(
+            "Invalid authentication format\n"
+            "Username cannot be empty."
         )
     
 def validate_forms(forms):
     for form in forms:
         if "=" not in form:
-            raise InvalidHeaderException(
-                f"Invalid form format: {form}"
+            raise InvalidFormException(
+                f"Invalid form format: {form}\n"
                 "Expected: name=value or name=@filename"
+            )
+
+        name, _ = form.split("=", 1)
+
+        if not name.strip():
+            raise InvalidFormException(
+                f"Invalid form format: {form}\n"
+                "Form field name cannot be empty."
             )

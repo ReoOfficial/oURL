@@ -1,49 +1,69 @@
-# `core/` Directory Documentation
+# MyCurl Core Layer
 
-## Directory purpose
+This directory contains the HTTP domain layer for MyCurl 2.1.
 
-The `core/` directory represents the HTTP domain of MyCurl. It defines supported methods, stores outgoing request configuration, sends requests through Requests, and wraps incoming responses.
+It defines supported methods, stores outgoing request configuration, sends HTTP and HTTPS requests, translates network failures, and wraps incoming responses.
 
 ```text
 core/
+├── README.md
 ├── client.py
 ├── methods.py
 ├── request.py
 └── response.py
 ```
 
-## Responsibility map
+## Current quality status
+
+```text
+core/client.py      100% coverage
+core/methods.py     100% coverage
+core/request.py     100% coverage
+core/response.py    100% coverage
+```
+
+The complete project currently reports:
+
+```text
+109 tests passed
+100% total coverage
+0 missed statements
+```
+
+---
+
+# Directory responsibilities
 
 | File | Responsibility |
 |---|---|
 | `methods.py` | Supported HTTP methods |
 | `request.py` | Outgoing request data model |
-| `client.py` | Networking and transport error translation |
+| `client.py` | HTTP networking and error translation |
 | `response.py` | Incoming response data model |
 
-## Directory flow
+## Core flow
 
 ```text
 validated and parsed values
           |
           v
-     Request object
+       Request
           |
           v
-      Client.send
+     Client.send()
           |
           v
-  requests.request(...)
+ requests.request(...)
           |
           v
-     Response object
+       Response
 ```
 
 ---
 
 # `methods.py`
 
-## Responsibility
+## Purpose
 
 Defines the HTTP methods officially supported by MyCurl.
 
@@ -59,35 +79,44 @@ SUPPORTED_METHODS = (
 )
 ```
 
-## Why it exists
+## Why this file exists
 
-This tuple acts as a single source of truth. `validator.py` imports it instead of maintaining its own copy.
+It provides one source of truth for method validation.
 
-## Runtime role
+`cli/validator.py` imports this tuple instead of hardcoding its own method list.
 
-`methods.py` does not send requests or select defaults. It only defines which explicit methods validation accepts.
+## Responsibilities
 
-## Adding a method
+- declare supported methods;
+- keep method names uppercase;
+- provide a reusable constant.
 
-To support another method:
+## What it does not do
 
-1. add its uppercase name to `SUPPORTED_METHODS`;
-2. verify Requests supports sending it;
-3. add validation tests;
-4. add client or end-to-end tests;
-5. update documentation.
+- choose default methods;
+- send requests;
+- validate URLs;
+- format output.
+
+Default method selection happens in `main.py`.
 
 ## Tests
 
-Covered indirectly by method validation tests.
+Covered through method-validation tests.
+
+Measured coverage:
+
+```text
+core/methods.py    100%
+```
 
 ---
 
 # `request.py`
 
-## Responsibility
+## Purpose
 
-Defines the internal `Request` object containing all data needed by the networking and formatting layers.
+Defines the internal outgoing `Request` object.
 
 ## Main class
 
@@ -95,9 +124,11 @@ Defines the internal `Request` object containing all data needed by the networki
 Request
 ```
 
+The class stores every setting needed by the client and formatter.
+
 ## Why a model object is used
 
-Without `Request`, functions would need many separate parameters:
+Without `Request`, functions would need many separate arguments:
 
 ```text
 method
@@ -107,85 +138,113 @@ body
 timeout
 verbose
 redirects
-TLS option
-auth
+TLS behavior
+authentication
+User-Agent
 output
-HEAD
+HEAD mode
 cookies
 cookie jar
 form data
-form files
+upload files
 ```
 
-A model object keeps related configuration together and makes interfaces easier to understand.
+A model object keeps the configuration together and makes interfaces easier to understand.
 
-## Stored fields
+---
+
+## Stored attributes
 
 | Attribute | Meaning |
 |---|---|
 | `method` | Selected HTTP method |
 | `url` | Target URL |
-| `headers` | Parsed request-header dictionary |
+| `headers` | Parsed request headers |
 | `body` | Raw `-d` body |
 | `timeout` | Maximum request duration |
 | `verbose` | Verbose-output flag |
 | `follow_redirects` | Redirect behavior |
 | `insecure` | Whether TLS verification is disabled |
-| `auth` | `(username, password)` tuple or `None` |
+| `auth` | Authentication tuple or `None` |
 | `user_agent` | Custom User-Agent or `None` |
 | `output` | Output filename or `None` |
 | `head` | HEAD-mode flag |
-| `cookies` | Cookie dictionary |
+| `cookies` | Parsed cookie mapping or current optional value |
 | `cookie_jar` | Cookie output filename |
-| `form_data` | Normal multipart/form fields |
-| `form_files` | Open binary upload-file objects |
+| `form_data` | Normal form fields |
+| `form_files` | Open upload-file objects |
 
-## Mutable defaults
+## Default behavior
 
-The class protects collection fields with patterns such as:
+The constructor preserves or normalizes optional collection values according to the current implementation.
 
-```python
-self.headers = headers or {}
-self.cookies = cookies or {}
-self.form_data = form_data or {}
-self.form_files = form_files or {}
-```
-
-This avoids shared mutable default arguments.
+For example, headers are normalized to an empty dictionary when absent, while some optional fields may remain `None`.
 
 ## Created by
 
-`main.py`
+```text
+main.py
+```
 
-## Consumed by
+## Used by
 
-- `core.client.Client.send()`;
-- `output.formatter.format_response()`.
+```text
+core/client.py
+output/formatter.py
+```
 
-## No networking responsibility
+## No side effects
 
-The class stores data only. It does not validate, parse, send, format, print, or save anything.
+`Request` does not:
 
-## Tests
+- validate;
+- open files;
+- send requests;
+- format output;
+- print output.
 
-The object is exercised indirectly through client and formatter tests using request-like objects. A future improvement could add direct constructor tests.
+It stores state only.
 
-## Maintenance guidance
+---
 
-When adding a runtime feature:
+## Request tests
 
-- add a field only if it logically belongs to an outgoing request;
-- update construction in `main.py`;
-- update every consumer;
-- add tests for defaults and propagation.
+`tests/test_request.py` contains 2 tests.
+
+Covered behavior:
+
+- every supplied constructor value is stored;
+- method;
+- URL;
+- headers;
+- body;
+- timeout;
+- verbose behavior;
+- redirects;
+- TLS behavior;
+- authentication;
+- User-Agent;
+- output filename;
+- HEAD mode;
+- cookies;
+- cookie jar;
+- form data;
+- upload files;
+- current optional-value behavior.
+
+Measured coverage:
+
+```text
+core/request.py    100%
+```
 
 ---
 
 # `client.py`
 
-## Responsibility
+## Purpose
 
-Converts the internal `Request` model into an actual HTTP/HTTPS operation through the `requests` package.
+Converts an internal `Request` object into an actual HTTP or HTTPS request through the `requests` package.
 
 ## Main class
 
@@ -199,31 +258,33 @@ Client
 send(request)
 ```
 
-## Request preparation sequence
+---
 
-### 1. Copy headers
+## Request preparation
+
+### Copy headers
 
 ```python
 headers = request.headers.copy()
 ```
 
-This allows the client to add defaults without modifying the original request dictionary.
+This prevents client defaults from modifying the original request dictionary.
 
-### 2. Select User-Agent
+### Select User-Agent
 
 Priority:
 
 1. custom `-A` value;
 2. default `MyCurl/2.1`.
 
-### 3. Add default Content-Type
+### Add default Content-Type
 
 When:
 
 - a raw body exists;
 - form data is absent;
-- files are absent;
-- the user did not supply Content-Type;
+- upload files are absent;
+- the user did not provide Content-Type;
 
 the client adds:
 
@@ -231,7 +292,7 @@ the client adds:
 application/x-www-form-urlencoded
 ```
 
-### 4. Select actual method
+### Select actual method
 
 Normally:
 
@@ -239,13 +300,15 @@ Normally:
 method = request.method
 ```
 
-For `-I`:
+When HEAD mode is enabled:
 
 ```python
 method = "HEAD"
 ```
 
-### 5. Call Requests
+---
+
+## Requests arguments
 
 The client forwards:
 
@@ -253,147 +316,159 @@ The client forwards:
 |---|---|
 | `method` | selected method |
 | `url` | `request.url` |
-| `headers` | copied and completed headers |
+| `headers` | completed headers |
 | `data` | form data or raw body |
 | `files` | upload dictionary |
-| `timeout` | decimal or integer timeout |
+| `timeout` | request timeout |
 | `verify` | opposite of `request.insecure` |
 | `allow_redirects` | `request.follow_redirects` |
 | `auth` | authentication tuple |
-| `cookies` | cookie dictionary |
+| `cookies` | request cookies |
 
-## Data priority
+## Body priority
 
 ```python
-data=request.form_data if request.form_data else request.body
+data = (
+    request.form_data
+    if request.form_data
+    else request.body
+)
 ```
 
-Normal form fields take priority over a raw body. Files are sent through the separate `files` argument.
+Form data takes priority over a raw body.
+
+Files are passed separately.
+
+---
 
 ## Prepared outgoing headers
 
-After Requests sends or prepares the request, the client reads:
+After Requests prepares the outgoing request, the client reads:
 
 ```python
 response.request.headers
 ```
 
-These headers include automatically generated values such as:
+These may include generated values such as:
 
-- Content-Length;
-- multipart Content-Type boundary;
-- connection and encoding headers.
+- `Content-Length`;
+- multipart boundaries;
+- encoding headers.
 
-The wrapper stores them so verbose output shows what was actually prepared.
+The prepared headers are stored in the custom response wrapper for verbose output.
+
+---
 
 ## Response wrapping
 
-The external Requests response is converted into:
+The external Requests response becomes:
 
 ```python
 core.response.Response
 ```
 
-This prevents the rest of MyCurl from depending directly on every Requests implementation detail.
+This keeps the rest of MyCurl dependent on its own stable interface.
+
+---
 
 ## Error translation
 
-Catch order is important because some Requests exceptions inherit from broader ones.
+Catch order is important.
 
 ### Timeout
 
 ```text
 requests.exceptions.Timeout
-    -> RequestTimeoutException
+→ RequestTimeoutException
 ```
 
 ### Excessive redirects
 
 ```text
 requests.exceptions.TooManyRedirects
-    -> TooManyRedirectsException
+→ TooManyRedirectsException
 ```
 
-### TLS verification
+### TLS certificate failure
 
 ```text
 requests.exceptions.SSLError
-    -> TLSException
+→ TLSException
 ```
-
-This must appear before the general connection handler.
 
 ### Connection failure
 
 ```text
 requests.exceptions.ConnectionError
-    -> ConnectionException
+→ ConnectionException
 ```
 
 ### Remaining Requests failure
 
 ```text
 requests.exceptions.RequestException
-    -> RequestFailedException
+→ RequestFailedException
 ```
 
-## File cleanup
+Specific exceptions must be caught before broader parent exceptions.
 
-A `finally` block closes all upload file objects after:
+---
+
+## Upload cleanup
+
+A `finally` block closes every upload file after:
 
 - success;
 - timeout;
-- redirect error;
-- TLS error;
-- connection error;
-- unexpected Requests error.
+- redirect failure;
+- TLS failure;
+- connection failure;
+- unexpected Requests failure.
 
-Earlier parsing failures are handled separately inside `parse_forms()`.
+Earlier parsing failures are handled inside `utils.helpers.parse_forms()`.
 
-## Inputs
+---
 
-One `Request` object.
+## Client tests
 
-## Output
+`tests/test_client.py` contains 15 tests.
 
-One custom `Response` object.
-
-## Tests
-
-`tests/test_client.py` contains 15 tests covering:
+Covered behavior:
 
 - GET;
 - HEAD override;
 - default and custom User-Agent;
-- generated Content-Type;
-- preserved custom Content-Type;
+- automatic Content-Type;
+- custom Content-Type preservation;
 - form-data priority;
-- forwarded options;
+- timeout forwarding;
+- TLS verification;
+- redirects;
+- authentication;
+- cookies;
 - prepared headers;
 - timeout translation;
 - redirect translation;
 - TLS translation;
 - connection translation;
 - fallback translation;
-- upload cleanup.
+- file cleanup.
 
-The HTTP call is mocked so these tests do not depend on internet access.
+The HTTP call is mocked.
 
-## Maintenance guidance
+Measured coverage:
 
-- Catch specific exceptions before parent exceptions.
-- Never leave upload files open.
-- Preserve user headers unless a documented default is needed.
-- Add tests for every new Requests option.
-- Keep formatting out of this file.
+```text
+core/client.py    100%
+```
 
 ---
 
 # `response.py`
 
-## Responsibility
+## Purpose
 
-Wraps the third-party Requests response and exposes a stable MyCurl-specific interface.
+Wraps a third-party Requests response in a MyCurl-specific object.
 
 ## Main class
 
@@ -401,45 +476,40 @@ Wraps the third-party Requests response and exposes a stable MyCurl-specific int
 Response
 ```
 
-## Constructor inputs
-
-- external Requests response;
-- optional prepared sent-header mapping.
-
-## Stored fields
+## Stored data
 
 | Attribute | Source |
 |---|---|
 | `status_code` | `response.status_code` |
 | `reason` | `response.reason` |
 | `headers` | `response.headers` |
-| `body` | `response.text` |
-| `content` | `response.content` |
-| `url` | `response.url` |
-| `elapsed` | `response.elapsed` |
-| `cookies` | `response.cookies` |
-| `history` | `response.history` |
+| `body` | decoded `response.text` |
+| `content` | raw `response.content` bytes |
+| `url` | final response URL |
+| `elapsed` | Requests elapsed time |
+| `cookies` | response cookies |
+| `history` | redirect history |
 | `sent_headers` | prepared outgoing headers |
+
+---
 
 ## Text and bytes
 
-The wrapper stores both:
+The wrapper stores both forms:
 
 ```python
 body = response.text
 content = response.content
 ```
 
-They serve different purposes:
-
-| Value | Used for |
+| Representation | Purpose |
 |---|---|
-| decoded text | terminal display and JSON formatting |
-| raw bytes | response size and binary-safe `-o` output |
+| text | terminal display and JSON formatting |
+| bytes | binary output and byte-size calculation |
 
-## Getter interface
+---
 
-Common getters include:
+## Getter methods
 
 ```python
 get_status_code()
@@ -454,76 +524,119 @@ get_history()
 get_sent_headers()
 ```
 
-## Calculated values
+## Calculated methods
 
 ### Elapsed seconds
-
-```python
-self.elapsed.total_seconds()
-```
-
-Returned by:
 
 ```python
 get_elapsed_seconds()
 ```
 
-### Response size
+uses:
 
 ```python
-len(self.content)
+self.elapsed.total_seconds()
 ```
 
-Returned by:
+### Response size
 
 ```python
 get_size()
 ```
 
-The size is measured in received bytes, not decoded characters.
+returns:
 
-## Consumers
+```python
+len(self.content)
+```
 
-- `output.formatter`;
-- `output.printer`;
-- cookie-saving logic in `main.py`.
-
-## Maintenance note
-
-Legacy getters referencing nonexistent response attributes should be removed or implemented before use.
-
-## Tests
-
-Response behavior is exercised by formatter, client, and printer tests. Additional direct tests could increase the file's measured coverage.
+The value is measured in bytes.
 
 ---
 
-## Core directory design principles
+## Response consumers
 
-### Model separation
+- `output/formatter.py`;
+- `output/printer.py`;
+- cookie-saving logic in `main.py`.
 
-`Request` represents outgoing intent.  
-`Response` represents incoming result.
+---
 
-### External dependency isolation
+## Response tests
 
-Only `client.py` directly performs Requests networking.
+`tests/test_response.py` contains 2 tests.
 
-### Stable interfaces
+Covered behavior:
 
-Other directories consume MyCurl objects and methods rather than relying on raw third-party objects.
+- status code;
+- reason;
+- response headers;
+- text body;
+- raw bytes;
+- final URL;
+- elapsed time;
+- cookies;
+- redirect history;
+- prepared headers;
+- elapsed seconds;
+- response size.
 
-### Resource ownership
+Measured coverage:
+
+```text
+core/response.py    100%
+```
+
+---
+
+# Core design principles
+
+## Separate outgoing and incoming models
+
+```text
+Request  = outgoing intent
+Response = incoming result
+```
+
+## Isolate external networking
+
+Only `client.py` performs Requests networking.
+
+## Preserve resources safely
 
 - `parse_forms()` owns files during parsing;
 - `Client.send()` owns them during networking;
-- cleanup occurs in both failure stages.
+- both stages clean up their own failures.
 
-## Directory maintenance checklist
+## Translate external failures
 
-- Supported method list and validation agree.
+Requests-specific exceptions are converted into MyCurl exceptions before reaching `main.py`.
+
+---
+
+# Adding a core feature
+
+When adding a new request behavior:
+
+1. Add a `Request` field if required.
+2. Update `main.py` construction.
+3. Update `Client.send()`.
+4. Update response storage if needed.
+5. Add request-model tests.
+6. Add client tests.
+7. Add response tests.
+8. Add direct-main tests.
+9. Update the README and technical documentation.
+
+---
+
+# Maintenance checklist
+
+- Supported method list matches validation.
 - Request fields match `main.py`.
-- Client forwards all required options.
-- Exception catch order remains specific-to-general.
-- Response stores raw bytes.
+- Client forwards all options.
+- User headers remain preserved.
+- Exception order remains specific-to-general.
 - Upload files close on every path.
+- Response stores both text and raw bytes.
+- Every core module remains at 100% coverage.

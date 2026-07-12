@@ -1,39 +1,55 @@
-# `cli/` Directory Documentation
+# MyCurl CLI Layer
 
-## Directory purpose
+This directory contains the command-line interface layer for MyCurl 2.1.
 
-The `cli/` directory defines how users communicate with MyCurl. It converts shell arguments into Python values and rejects invalid combinations before any network request or file operation begins.
+It defines how command-line arguments are parsed and how user input is validated before any network request or file operation begins.
 
 ```text
 cli/
+├── README.md
 ├── parser.py
 └── validator.py
 ```
 
-## Responsibility boundary
+## Current quality status
 
-The directory answers two different questions:
+```text
+cli/parser.py       100% coverage
+cli/validator.py    100% coverage
+```
 
-| File | Question |
+The complete project currently reports:
+
+```text
+109 tests passed
+100% total coverage
+0 missed statements
+```
+
+---
+
+# Directory responsibilities
+
+The CLI layer answers two separate questions:
+
+| File | Responsibility |
 |---|---|
 | `parser.py` | What did the user type? |
-| `validator.py` | Is what the user typed acceptable? |
+| `validator.py` | Is the parsed value valid for MyCurl? |
 
-Parsing and validation are intentionally separate. Parsing creates correctly typed values, while validation enforces project-specific rules.
-
-## Directory data flow
+Parsing and validation are intentionally separate.
 
 ```text
 sys.argv
    |
    v
-parser.parse_args()
+parse_args()
    |
    v
 argparse.Namespace
    |
    v
-validator.validate(args)
+validate(args)
    |
    v
 validated Namespace
@@ -43,9 +59,9 @@ validated Namespace
 
 # `parser.py`
 
-## Responsibility
+## Purpose
 
-Defines the entire command-line interface using Python's `argparse` module.
+Defines the complete command-line interface with Python's `argparse` module.
 
 ## Public function
 
@@ -53,9 +69,11 @@ Defines the entire command-line interface using Python's `argparse` module.
 parse_args()
 ```
 
-### Return value
+The function returns an `argparse.Namespace` containing all parsed options.
 
-An `argparse.Namespace` containing fields such as:
+## Parsed fields
+
+Typical namespace fields include:
 
 ```text
 url
@@ -75,148 +93,152 @@ user_agent
 output
 ```
 
-## Parser configuration
+---
 
-The parser defines:
-
-- program name;
-- usage text;
-- project description;
-- formatted examples;
-- grouped options;
-- version output;
-- automatic help output.
-
-## Argument groups
+## Supported arguments
 
 ### Target
 
 #### `URL`
 
-Required positional argument containing the HTTP or HTTPS destination.
+Required positional target URL.
 
 ```powershell
 python main.py https://example.com
 ```
 
-### Request options
+---
 
-#### `-X`, `--request`
+## Request options
 
-Stores an explicit HTTP method.
+### `-X`, `--request METHOD`
+
+Sets an explicit HTTP method.
 
 ```powershell
 python main.py -X DELETE https://example.com/resource
 ```
 
-The parser does not decide whether the method is supported. That belongs to `validator.py`.
+The parser stores the value. `validator.py` decides whether the method is supported.
 
-#### `-H`, `--header`
+### `-H`, `--header HEADER`
 
-Uses `action="append"` so it may be repeated.
+Adds a request header and may be repeated.
 
 ```powershell
 python main.py `
   -H "Accept: application/json" `
-  -H "X-Test: value" `
+  -H "X-Test: hello" `
   https://example.com
 ```
 
-Parsed result:
+Because the option uses `action="append"`, the parser returns a list.
 
-```python
-[
-    "Accept: application/json",
-    "X-Test: value",
-]
-```
+### `-d`, `--data DATA`
 
-#### `-d`, `--data`
-
-Stores a raw request body string.
+Stores a raw request body.
 
 ```powershell
 python main.py -d "name=Reo" https://example.com
 ```
 
-#### `-F`, `--form`
+When no explicit method is supplied, `main.py` selects `POST`.
 
-Uses `action="append"` and supports normal form fields and file syntax.
+### `-F`, `--form FORM`
+
+Adds normal form data or a file upload and may be repeated.
 
 ```powershell
 -F "name=Reo"
 -F "file=@example.txt"
 ```
 
-#### `-I`, `--head`
+### `-I`, `--head`
 
-Uses `action="store_true"` to request HEAD behavior.
+Enables HEAD behavior.
 
-### Authentication and cookies
+```powershell
+python main.py -I https://example.com
+```
 
-#### `-u`, `--user`
+---
 
-Stores authentication text in `username:password` form.
+## Authentication and cookies
 
-#### `-b`, `--cookie`
+### `-u`, `--user USER:PASS`
+
+Stores basic-authentication text.
+
+```powershell
+python main.py -u "user:password" https://example.com
+```
+
+### `-b`, `--cookie COOKIE`
 
 Stores a semicolon-separated cookie string.
 
-#### `-c`, `--cookie-jar`
+```powershell
+python main.py -b "session=abc123; theme=dark" https://example.com
+```
+
+### `-c`, `--cookie-jar FILE`
 
 Stores the output filename for received cookies.
 
-### Connection options
-
-#### `--max-time`
-
-Uses `type=float` and defaults to `15.0`.
-
-Accepted:
-
 ```powershell
---max-time 5
---max-time 5.5
+python main.py -c cookies.txt https://example.com
 ```
 
-Rejected by argparse:
+---
+
+## Connection options
+
+### `--max-time SECONDS`
+
+Uses `type=float`, so integer and decimal values are accepted.
 
 ```powershell
---max-time abc
+python main.py --max-time 5 https://example.com
+python main.py --max-time 5.5 https://example.com
 ```
 
-Rejected later by validation:
+The default is:
 
-```powershell
---max-time 0
---max-time -1
+```text
+15.0 seconds
 ```
 
-#### `-L`, `--location`
+Argparse rejects non-numeric values. `validator.py` rejects zero and negative values.
 
-Boolean flag enabling redirect following.
+### `-L`, `--location`
 
-#### `-k`, `--insecure`
+Enables redirect following.
 
-Boolean flag disabling TLS certificate verification.
+### `-k`, `--insecure`
 
-### Output options
+Disables TLS certificate verification.
 
-#### `-v`, `--verbose`
+---
 
-Enables cURL-like request and response details.
+## Output options
 
-#### `-A`, `--user-agent`
+### `-v`, `--verbose`
 
-Stores a custom User-Agent string.
+Displays request and response details.
 
-#### `-o`, `--output`
+### `-A`, `--user-agent VALUE`
 
-Stores the destination filename for raw response bytes.
+Overrides the default User-Agent.
 
-### Metadata
+### `-o`, `--output FILE`
 
-#### `--version`
+Stores raw response bytes in a file.
+
+---
+
+## Metadata
+
+### `--version`
 
 Prints:
 
@@ -224,83 +246,77 @@ Prints:
 MyCurl 2.1
 ```
 
-#### `--help`
+### `--help`
 
-Automatically generated by argparse.
+Generated automatically by argparse.
 
-## Important argparse features
+---
 
-| Feature | Used for |
+## Argparse concepts used
+
+| Feature | Usage |
 |---|---|
 | positional argument | Required URL |
 | `action="append"` | Repeated headers and forms |
-| `action="store_true"` | Boolean flags |
-| `type=float` | Decimal timeout |
-| `metavar` | Cleaner help display |
-| argument groups | Organized `--help` |
-| `RawTextHelpFormatter` | Preserved example formatting |
-| `action="version"` | Version command |
+| `action="store_true"` | Boolean options |
+| `type=float` | Decimal timeouts |
+| `metavar` | Cleaner help output |
+| argument groups | Organized help |
+| `RawTextHelpFormatter` | Preserved examples |
+| `action="version"` | Version output |
 
-## Dependencies
+---
 
-Only the Python standard-library module `argparse`.
+## Parser tests
 
-## Errors
+`tests/test_parser.py` contains 10 tests covering:
 
-Argparse handles syntax-level failures itself. It prints usage information and exits with code `2` when required values are missing or a typed value cannot be parsed.
-
-## Tests
-
-`tests/test_parser.py` tests:
-
-- basic URL;
+- URL parsing;
 - default values;
-- decimal timeout;
-- explicit method;
+- decimal timeouts;
+- custom methods;
 - repeated headers;
-- data;
-- verbose and redirects;
-- authentication and cookies;
+- request data;
+- verbose mode;
+- redirects;
+- authentication;
+- cookies;
 - repeated forms;
-- HEAD and output.
+- HEAD mode;
+- output filenames.
 
-## Maintenance guidance
+Measured coverage:
 
-When adding a new flag:
-
-1. define it here;
-2. decide its destination name;
-3. add validation if required;
-4. add a matching `Request` attribute if runtime code needs it;
-5. add parser tests;
-6. update help examples and README.
+```text
+cli/parser.py    100%
+```
 
 ---
 
 # `validator.py`
 
-## Responsibility
+## Purpose
 
-Rejects values that are syntactically parsed but invalid for MyCurl.
+Checks whether parsed values are valid for MyCurl.
 
-## Public entry point
+## Public coordinator
 
 ```python
 validate(args)
 ```
 
-It calls each specialized validator and returns the same namespace when every check passes.
+This function calls every individual validator and returns the same namespace when all checks pass.
 
-## Validation functions
+---
 
-### `validate_url(url)`
+## `validate_url(url)`
 
 Uses `urllib.parse.urlparse`.
 
 Requirements:
 
 - scheme must be `http` or `https`;
-- network location must exist.
+- network location must be present.
 
 Accepted:
 
@@ -314,7 +330,7 @@ Rejected:
 ```text
 example.com
 ftp://example.com
-file:///etc/passwd
+file:///example.txt
 not-a-url
 ```
 
@@ -324,12 +340,14 @@ Raises:
 InvalidURLException
 ```
 
-### `validate_method(method)`
+---
+
+## `validate_method(method)`
 
 Behavior:
 
-- returns successfully when method is `None`;
-- compares uppercase method text;
+- accepts `None`;
+- compares methods in uppercase;
 - checks `core.methods.SUPPORTED_METHODS`.
 
 Raises:
@@ -338,12 +356,14 @@ Raises:
 InvalidMethodException
 ```
 
-### `validate_headers(headers)`
+---
 
-For every header:
+## `validate_headers(headers)`
 
-- requires a colon;
-- requires a non-empty name before the first colon.
+Each header must:
+
+- contain `:`;
+- have a non-empty name.
 
 Accepted:
 
@@ -365,9 +385,15 @@ Raises:
 InvalidHeaderException
 ```
 
-### `validate_timeout(timeout)`
+---
 
-Requires a number greater than zero.
+## `validate_timeout(timeout)`
+
+Requires:
+
+```text
+timeout > 0
+```
 
 Accepted:
 
@@ -391,12 +417,14 @@ Raises:
 InvalidTimeoutException
 ```
 
-### `validate_auth(auth)`
+---
 
-When auth is present:
+## `validate_auth(auth)`
 
-- requires a colon;
-- requires a non-empty username.
+When supplied:
+
+- must contain `:`;
+- username must not be empty.
 
 Accepted:
 
@@ -408,7 +436,7 @@ user:password:with:colons
 Rejected:
 
 ```text
-missing_password
+missing-password
 :password
 ```
 
@@ -418,12 +446,16 @@ Raises:
 InvalidAuthException
 ```
 
-### `validate_forms(forms)`
+`None` is accepted when authentication is not used.
 
-For every form value:
+---
 
-- requires `=`;
-- requires a non-empty field name.
+## `validate_forms(forms)`
+
+Every form entry must:
+
+- contain `=`;
+- have a non-empty field name.
 
 Accepted:
 
@@ -435,7 +467,7 @@ file=@example.txt
 Rejected:
 
 ```text
-missing_equals_sign
+missing-equals
 =value
 ```
 
@@ -445,7 +477,9 @@ Raises:
 InvalidFormException
 ```
 
-## Dependencies
+---
+
+## Validator dependencies
 
 | Dependency | Purpose |
 |---|---|
@@ -453,27 +487,32 @@ InvalidFormException
 | `core.methods.SUPPORTED_METHODS` | Supported-method source of truth |
 | `utils.errors` | Typed validation failures |
 
-## Why no cookie validation here?
+---
 
-Cookie parsing and validation occur together inside `utils.helpers.parse_cookies()`, because the string must be split into individual pairs during validation.
+## Validator tests
 
-## Tests
+`tests/test_validator.py` contains 26 tests after parameter expansion.
 
-`tests/test_validator.py` contains 24 tests after parameter expansion. It covers valid and invalid values for every validator.
+Covered behavior includes:
 
-## Extension guidance
+- valid and invalid URLs;
+- uppercase, lowercase, absent, and unsupported methods;
+- valid and malformed headers;
+- integer and decimal timeouts;
+- zero and negative timeouts;
+- valid, absent, and malformed authentication;
+- valid and malformed forms;
+- the complete `validate(args)` coordinator.
 
-A new CLI option requiring semantic validation should receive:
+Measured coverage:
 
-1. a dedicated validator function;
-2. a dedicated exception when the category is distinct;
-3. invocation from `validate(args)`;
-4. positive and negative tests;
-5. a CLI subprocess test for exit behavior when appropriate.
+```text
+cli/validator.py    100%
+```
 
 ---
 
-## Directory-level error flow
+# Error flow
 
 ```text
 invalid parsed value
@@ -488,13 +527,36 @@ custom exception
 main.py handler
        |
        v
-"mycurl: ..." + exit code 1
+mycurl error message
+       |
+       v
+exit code 1
 ```
 
-## Directory maintenance checklist
+---
+
+# Adding a new CLI option
+
+When adding a new flag:
+
+1. Define it in `parser.py`.
+2. Choose an appropriate destination name.
+3. Add validation if the value has rules.
+4. Add a `Request` field if runtime code needs it.
+5. Add parser tests.
+6. Add validator tests.
+7. Add direct `main()` tests.
+8. Add subprocess tests when output or exit behavior changes.
+9. Update the root README and technical documentation.
+
+---
+
+# Maintenance checklist
 
 - Parser defaults match runtime assumptions.
-- Every repeatable option uses `action="append"`.
+- Repeatable options use `action="append"`.
+- Boolean flags use `action="store_true"`.
 - Timeout remains `float`.
-- Validation errors use the correct exception type.
-- New flags appear in tests and documentation.
+- Validation errors use dedicated exception types.
+- New flags appear in help output.
+- Parser and validator tests remain at 100% coverage.

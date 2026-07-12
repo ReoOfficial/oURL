@@ -102,29 +102,37 @@ MyCurl/
 ├── requirements.txt
 │
 ├── cli/
+│   ├── README.md
 │   ├── parser.py
 │   └── validator.py
 │
 ├── core/
+│   ├── README.md
 │   ├── client.py
 │   ├── methods.py
 │   ├── request.py
 │   └── response.py
 │
 ├── output/
+│   ├── README.md
 │   ├── formatter.py
 │   └── printer.py
 │
 ├── tests/
+│   ├── README.md
 │   ├── test_cli.py
 │   ├── test_client.py
 │   ├── test_formatter.py
 │   ├── test_helpers.py
+│   ├── test_main.py
 │   ├── test_parser.py
 │   ├── test_printer.py
+│   ├── test_request.py
+│   ├── test_response.py
 │   └── test_validator.py
 │
 └── utils/
+    ├── README.md
     ├── errors.py
     └── helpers.py
 ```
@@ -192,6 +200,40 @@ Without `main.py`, the modules would be separate pieces with no execution flow. 
 
 Handled application errors print a readable `mycurl:` message and exit with a non-zero process status. This includes validation failures, TLS errors, redirect loops, file-write failures, connection failures, and unexpected Requests-level errors.
 
+
+### Callable entry point
+
+The application logic is wrapped in:
+
+```python
+def main():
+    ...
+```
+
+and executed through:
+
+```python
+if __name__ == "__main__":
+    main()
+```
+
+This keeps normal CLI execution unchanged while allowing `tests/test_main.py` to call the coordinator directly and measure its behavior.
+
+### Tests
+
+`tests/test_main.py` verifies:
+
+- default `GET` and automatic `POST` selection;
+- preservation of an explicit method;
+- request construction and parsed values;
+- cookie saving;
+- response formatting and output routing;
+- every handled custom exception;
+- non-zero error exit codes;
+- the `__main__` entry point and version command.
+
+Together with `tests/test_cli.py`, this gives both direct coordinator coverage and real subprocess-level CLI verification.
+
 ---
 
 ## `README.md`
@@ -223,7 +265,7 @@ The README explains **how to install and use** MyCurl. This document explains **
 
 ### Current state
 
-The README should identify the current release as MyCurl 2.1 and report 82 automated tests, 87% measured coverage, binary-safe downloads, decimal timeouts, hardened error handling, and end-to-end CLI tests.
+The README identifies the current release as MyCurl 2.1 and reports 109 automated tests, 100% measured statement coverage, binary-safe downloads, decimal timeouts, hardened error handling, direct coordinator tests, and end-to-end CLI tests.
 
 ---
 
@@ -518,6 +560,11 @@ A request has many related settings. Passing fifteen separate parameters through
 - Read by `output/formatter.py`.
 
 
+### Tests
+
+`tests/test_request.py` verifies that the constructor stores every supplied request setting. It also verifies the current handling of optional values, including normalized empty dictionaries and values that intentionally remain `None`.
+
+
 ---
 
 ## `core/client.py`
@@ -662,6 +709,11 @@ It also provides a natural place for project-specific calculations such as elaps
 ### Maintenance note
 
 If legacy methods such as `get_form_data()` or `get_form_files()` remain without matching attributes, they should be removed or implemented before being used.
+
+
+### Tests
+
+`tests/test_response.py` verifies all public getters, raw response bytes, prepared outgoing headers, cookies, redirect history, elapsed-time conversion, and byte-size calculation.
 
 ---
 
@@ -936,13 +988,20 @@ without checking error-message strings.
 
 # 8. Test suite
 
-The project contains 82 automated pytest tests. Most tests are isolated unit tests, the client tests mock networking, and the CLI tests launch the real entry point in subprocesses.
+The project contains 109 automated pytest tests and currently reports 100% measured statement coverage with zero missed statements.
+
+The suite combines:
+
+- isolated unit tests;
+- mocked networking tests;
+- direct `main()` coordinator tests;
+- real subprocess-level CLI tests.
 
 ## `tests/test_cli.py`
 
 ### Purpose
 
-Tests the complete command-line program through `main.py`.
+Tests the complete command-line program by launching `main.py` in separate Python processes.
 
 ### Covered behavior
 
@@ -959,9 +1018,9 @@ Tests the complete command-line program through `main.py`.
 
 9 tests.
 
-### Coverage note
+### Why these tests remain important
 
-These tests execute `main.py` in child processes. The standard parent-process coverage report does not automatically attribute that execution to `main.py`, even though the entry point is genuinely tested.
+Direct tests can cover `main()` internally, but subprocess tests verify the behavior users actually observe: process exit status, standard output, standard error, argparse handling, and the executable entry point.
 
 ---
 
@@ -976,11 +1035,15 @@ Tests networking logic without making real network requests.
 - GET and HEAD method selection;
 - default and custom User-Agent values;
 - automatic and custom Content-Type values;
-- form data priority over a raw body;
+- form-data priority over a raw body;
 - timeout, TLS, redirect, authentication, and cookie options;
 - prepared request headers;
-- timeout, TLS, connection, excessive redirect, and fallback request errors;
+- timeout, TLS, connection, excessive-redirect, and fallback request errors;
 - uploaded-file cleanup.
+
+### Testing approach
+
+`requests.request` is replaced with fake functions through `monkeypatch`. This makes tests deterministic and independent of public endpoints.
 
 ### Test count
 
@@ -1000,6 +1063,7 @@ Tests response-body and terminal-output formatting.
 - unchanged plain text;
 - normal body output;
 - verbose request and response details;
+- standard and custom prepared request headers;
 - timing and response size;
 - POST body display;
 - HEAD output without a body;
@@ -1015,7 +1079,7 @@ Tests response-body and terminal-output formatting.
 
 ### Purpose
 
-Tests conversion and file-handling functions in `utils/helpers.py`.
+Tests conversion, file-handling, cookie writing, and cleanup functions in `utils/helpers.py`.
 
 ### Covered behavior
 
@@ -1024,13 +1088,48 @@ Tests conversion and file-handling functions in `utils/helpers.py`.
 - authentication parsing;
 - single and repeated cookies;
 - malformed cookies and empty cookie names;
-- form data;
-- cookie-jar write failures;
+- normal form data;
+- successful Netscape cookie-file output;
+- no-op cookie saving without a filename;
+- cookie-file write failures;
 - cleanup when a later upload fails after an earlier file opened.
 
 ### Test count
 
-14 tests.
+16 tests.
+
+---
+
+## `tests/test_main.py`
+
+### Purpose
+
+Tests the `main()` coordinator directly in the pytest process.
+
+### Covered behavior
+
+- default `GET` selection;
+- automatic `POST` selection for body data;
+- preservation of explicit methods;
+- validation invocation;
+- request-object construction;
+- parsed headers, auth, cookies, and forms;
+- client invocation;
+- cookie-jar saving;
+- response formatting;
+- terminal and file output routing;
+- every handled custom exception;
+- error text and exit code `1`;
+- the `if __name__ == "__main__"` entry point;
+- version output.
+
+### Test count
+
+18 tests after parameter expansion.
+
+### Why this file changed coverage
+
+Earlier subprocess tests verified `main.py` behavior but did not attribute executed lines to the parent coverage run. Directly calling `main()` now measures those statements while the subprocess suite continues to verify real CLI behavior.
 
 ---
 
@@ -1061,12 +1160,59 @@ Tests the command-line parser without launching a separate process.
 
 ### Purpose
 
-Tests file-output behavior.
+Tests terminal output, binary file output, and file-system error conversion.
 
 ### Covered behavior
 
 - invalid output paths raise `FileWriteException`;
-- binary response bytes are written exactly without corruption.
+- binary response bytes are written exactly without corruption;
+- normal formatted text is printed to the terminal.
+
+### Test count
+
+3 tests.
+
+---
+
+## `tests/test_request.py`
+
+### Purpose
+
+Tests the internal outgoing `Request` model directly.
+
+### Covered behavior
+
+- every constructor value is stored correctly;
+- header defaults are normalized as implemented;
+- optional cookie and form values preserve the current `None` behavior;
+- file collections use the current default behavior.
+
+### Test count
+
+2 tests.
+
+---
+
+## `tests/test_response.py`
+
+### Purpose
+
+Tests the internal incoming `Response` wrapper directly.
+
+### Covered behavior
+
+- status code;
+- reason;
+- response headers;
+- decoded body;
+- raw content bytes;
+- final URL;
+- elapsed time;
+- cookies;
+- redirect history;
+- prepared sent headers;
+- elapsed seconds;
+- response size in bytes.
 
 ### Test count
 
@@ -1078,26 +1224,28 @@ Tests file-output behavior.
 
 ### Purpose
 
-Tests input validation.
+Tests input validation and the top-level validation coordinator.
 
 ### Covered behavior
 
 - valid and invalid HTTP/HTTPS URLs;
-- supported and unsupported methods;
+- supported, lowercase, absent, and unsupported methods;
 - valid and malformed headers;
 - integer and decimal timeouts;
 - zero and negative timeouts;
-- valid and invalid authentication;
-- valid and invalid forms.
+- valid, absent, and invalid authentication;
+- valid and invalid forms;
+- execution of the complete `validate(args)` pipeline.
 
 ### Testing techniques
 
 - `pytest.raises(...)` checks expected exceptions.
 - `pytest.mark.parametrize(...)` runs one test with several values.
+- `SimpleNamespace` supplies a complete argument object for coordinator testing.
 
 ### Test count
 
-24 tests after parameter expansion.
+26 tests after parameter expansion.
 
 ---
 
@@ -1136,28 +1284,51 @@ python -m pytest --cov=. --cov-report=term-missing
 Current reported result:
 
 ```text
-82 passed
-87% total coverage
+109 passed
+100% total coverage
+0 missed statements
 ```
 
-### Latest module coverage
+### Final coverage report
 
 ```text
-cli/parser.py          100%
-cli/validator.py        82%
-core/client.py         100%
-core/methods.py        100%
-core/response.py        68%
-main.py                  0%*
-output/formatter.py     98%
-output/printer.py       90%
-utils/errors.py        100%
-utils/helpers.py        85%
+Name                      Stmts   Miss  Cover
+------------------------------------------------
+cli/parser.py                25      0   100%
+cli/validator.py             45      0   100%
+core/client.py               29      0   100%
+core/methods.py               1      0   100%
+core/request.py              18      0   100%
+core/response.py             37      0   100%
+main.py                      69      0   100%
+output/formatter.py          47      0   100%
+output/printer.py            10      0   100%
+tests/test_cli.py            51      0   100%
+tests/test_client.py        134      0   100%
+tests/test_formatter.py      68      0   100%
+tests/test_helpers.py        70      0   100%
+tests/test_main.py           99      0   100%
+tests/test_parser.py         51      0   100%
+tests/test_printer.py        15      0   100%
+tests/test_request.py        26      0   100%
+tests/test_response.py       23      0   100%
+tests/test_validator.py      59      0   100%
+utils/errors.py              28      0   100%
+utils/helpers.py             61      0   100%
+------------------------------------------------
+TOTAL                       966      0   100%
 ```
 
-`main.py` is marked as 0% by the standard report because the end-to-end CLI tests execute it in subprocesses. Those tests still verify its real output and exit behavior.
+### What 100% coverage means
 
-High coverage does not prove that no bugs exist. It means the tests executed a large percentage of measured statements. Test quality still depends on whether the assertions cover meaningful behavior.
+Every measured statement was executed during the test run. It does not mathematically prove that no bug can exist, but it confirms that every current statement is reached by at least one automated test.
+
+The suite is designed to test behavior rather than only execute lines:
+
+- unit tests verify individual rules;
+- mocked client tests verify outgoing networking options;
+- direct `main()` tests verify orchestration and error mapping;
+- subprocess tests verify real command-line behavior and exit codes.
 
 ---
 
@@ -1168,45 +1339,58 @@ High coverage does not prove that no bugs exist. It means the tests executed a l
 - malformed cookies produce `InvalidCookieException`;
 - authentication and form validation use dedicated exceptions;
 - decimal timeout values are accepted;
-- invalid timeout values still fail cleanly.
+- invalid timeout values fail cleanly;
+- coordinator validation is directly tested.
 
 ### Network hardening
 
 - TLS failures are separated from ordinary connection errors;
 - excessive redirects produce a readable custom error;
 - unexpected Requests-level failures become `RequestFailedException`;
-- handled network failures return non-zero exit codes.
+- handled network failures return non-zero exit codes;
+- all networking exception translations are regression-tested.
 
 ### File hardening
 
 - invalid output and cookie-jar paths produce `FileWriteException`;
 - binary downloads are saved as raw bytes;
 - partially opened upload files are closed if later parsing fails;
-- uploaded files are closed after request completion or failure.
+- uploaded files are closed after request completion or failure;
+- successful cookie-file writing and binary output are tested.
 
 ### Test hardening
 
-- end-to-end CLI tests verify output and exit codes;
-- regression tests cover the newly fixed failures;
-- the suite contains 82 tests;
-- measured coverage is 87%.
+- end-to-end CLI tests verify user-visible output and exit codes;
+- direct `main()` tests verify application orchestration;
+- `Request` and `Response` models have dedicated tests;
+- every fixed failure includes a regression test;
+- the suite contains 109 passing tests;
+- measured statement coverage is 100%.
 
 ---
 
 # 12. Current limitations and future improvements
 
-MyCurl is complete for its current HTTP/HTTPS project scope, but it is not intended to reproduce every cURL feature or protocol.
+MyCurl is feature-complete for its current HTTP and HTTPS project scope, but it is not intended to reproduce every cURL feature or protocol.
+
+Current limitations include:
+
+- verbose information is not yet separated to stderr;
+- displayed protocol text is fixed as `HTTP/1.1`;
+- large responses are loaded into memory instead of streamed;
+- protocols such as FTP are intentionally rejected;
+- advanced cURL options are outside the current scope.
 
 Possible future improvements include:
 
-- separating verbose information to stderr and response bodies to stdout;
-- detecting and displaying the actual HTTP protocol version;
-- adding installable package metadata and a direct `mycurl` command;
-- adding GitHub Actions continuous integration;
-- adding subprocess-aware coverage configuration;
-- supporting streaming and very large downloads;
-- adding more cURL-compatible data and output options;
-- supporting protocols beyond HTTP and HTTPS.
+- GitHub Actions continuous integration;
+- installable package metadata;
+- a direct `mycurl` console command;
+- separate verbose output to stderr;
+- streaming for large downloads;
+- actual HTTP protocol-version detection;
+- more cURL-compatible data and output options;
+- additional supported protocols.
 
 ---
 
@@ -1216,7 +1400,7 @@ Possible future improvements include:
 |---|---|
 | `main.py` | Coordinates the application and maps errors to CLI output |
 | `cli/parser.py` | Defines and parses CLI options |
-| `cli/validator.py` | Validates user input |
+| `cli/validator.py` | Validates user input and coordinates validation |
 | `core/methods.py` | Lists supported HTTP methods |
 | `core/request.py` | Stores outgoing request settings |
 | `core/client.py` | Sends requests, translates network errors, and closes upload files |
@@ -1225,17 +1409,46 @@ Possible future improvements include:
 | `output/printer.py` | Prints formatted text or saves raw bytes |
 | `utils/helpers.py` | Parses inputs, manages uploads, and saves cookies |
 | `utils/errors.py` | Defines custom application exceptions |
-| `tests/test_cli.py` | Tests the complete CLI and exit codes |
+| `tests/test_cli.py` | Tests real CLI subprocess behavior and exit codes |
 | `tests/test_client.py` | Tests request-sending logic with mocks |
 | `tests/test_formatter.py` | Tests output formatting |
-| `tests/test_helpers.py` | Tests helper parsing and cleanup |
-| `tests/test_parser.py` | Tests CLI parsing |
-| `tests/test_printer.py` | Tests binary and failed file output |
-| `tests/test_validator.py` | Tests validation |
+| `tests/test_helpers.py` | Tests parsing, cookie writing, and cleanup |
+| `tests/test_main.py` | Tests direct coordinator behavior and error handlers |
+| `tests/test_parser.py` | Tests argparse configuration |
+| `tests/test_printer.py` | Tests terminal, binary, and failed file output |
+| `tests/test_request.py` | Tests the outgoing request model |
+| `tests/test_response.py` | Tests the incoming response model |
+| `tests/test_validator.py` | Tests individual validators and the validation pipeline |
 | `README.md` | Public installation and usage guide |
-| `PROJECT_DOCUMENTATION.md` | Internal technical documentation |
+| `PROJECT_DOCUMENTATION.md` | Complete internal technical documentation |
+| `cli/README.md` | Detailed CLI-directory documentation |
+| `core/README.md` | Detailed core-directory documentation |
+| `output/README.md` | Detailed output-directory documentation |
+| `tests/README.md` | Detailed test-directory documentation |
+| `utils/README.md` | Detailed utility-directory documentation |
 | `requirements.txt` | Records dependencies |
 | `.gitignore` | Excludes generated and local files |
+
+---
+
+# 14. Release verification
+
+Before committing or publishing the release, run:
+
+```powershell
+python -m pytest
+python -m pytest --cov=. --cov-report=term-missing
+python main.py --version
+git status
+```
+
+Expected:
+
+```text
+109 passed
+100% total coverage
+MyCurl 2.1
+```
 
 ---
 
@@ -1243,4 +1456,4 @@ Possible future improvements include:
 
 The most important concept to remember is:
 
-> `main.py` coordinates, the CLI layer understands the user, the utility layer converts values, the core layer performs HTTP work, the output layer presents or saves the result, and the tests verify each responsibility independently.
+> `main.py` coordinates, the CLI layer understands and validates the user, the utility layer converts values and manages reusable file operations, the core layer performs HTTP work, the output layer presents or saves the result, and the test suite verifies every measured statement and each major behavior path.

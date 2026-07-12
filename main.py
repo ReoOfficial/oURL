@@ -34,116 +34,121 @@ from utils.errors import (
     RequestFailedException,
 )
 
-try:
-    args = parse_args()
+def main():
+    try:
+        args = parse_args()
 
-    if args.method is None:
+        if args.method is None:
 
-        if args.data or args.form:
-            args.method = "POST"
-    
-        else:
-            args.method = "GET"
+            if args.data or args.form:
+                args.method = "POST"
+        
+            else:
+                args.method = "GET"
 
-    validate(args)
+        validate(args)
 
-    form_data, form_files = parse_forms(args.form)
+        form_data, form_files = parse_forms(args.form)
 
-    request = Request(
-        method=args.method,
-        url=args.url,
-        headers=parse_headers(args.header),
-        body=args.data,
-        timeout=args.max_time,
+        request = Request(
+            method=args.method,
+            url=args.url,
+            headers=parse_headers(args.header),
+            body=args.data,
+            timeout=args.max_time,
 
-        verbose=args.verbose,
-        follow_redirects=args.location,
-        insecure=args.insecure,
+            verbose=args.verbose,
+            follow_redirects=args.location,
+            insecure=args.insecure,
 
-        auth=parse_auth(args.user),
-        user_agent=args.user_agent,
+            auth=parse_auth(args.user),
+            user_agent=args.user_agent,
 
-        output=args.output,
-        head=args.head,
+            output=args.output,
+            head=args.head,
 
-        cookies=parse_cookies(args.cookie),
-        cookie_jar=args.cookie_jar,
+            cookies=parse_cookies(args.cookie),
+            cookie_jar=args.cookie_jar,
 
-        form_data=form_data,
-        form_files=form_files,
-    )
-
-
-    client = Client()
-
-    response = client.send(request)
-
-    if args.cookie_jar:
-        save_cookies(
-            response.get_cookies(),
-            args.cookie_jar
+            form_data=form_data,
+            form_files=form_files,
         )
 
-    output = format_response(request, response)
 
-    print_response(
-        output,
-        args.output,
-        response.get_content(),
-        )
+        client = Client()
 
-except InvalidURLException as e:
-    print(f"mycurl: {e}")
-    sys.exit(1)
+        response = client.send(request)
 
-except InvalidMethodException as e:
-    print(f"mycurl: {e}")
-    sys.exit(1)
+        if args.cookie_jar:
+            save_cookies(
+                response.get_cookies(),
+                args.cookie_jar
+            )
 
-except InvalidHeaderException as e:
-    print(f"mycurl: {e}")
-    sys.exit(1)
+        output = format_response(request, response)
 
-except InvalidTimeoutException as e:
-    print(f"mycurl: {e}")
-    sys.exit(1)
+        print_response(
+            output,
+            args.output,
+            response.get_content(),
+            )
 
-except RequestTimeoutException:
-    print("mycurl: Request timed out")
-    sys.exit(1)
+    except InvalidURLException as e:
+        print(f"mycurl: {e}")
+        sys.exit(1)
 
-except ConnectionException:
-    print("mycurl: Connection failed")
-    sys.exit(1)
+    except InvalidMethodException as e:
+        print(f"mycurl: {e}")
+        sys.exit(1)
 
-except FileUploadException as e :
-    print(f"mycurl: {e}")
-    sys.exit(1)
+    except InvalidHeaderException as e:
+        print(f"mycurl: {e}")
+        sys.exit(1)
 
-except InvalidCookieException as e:
-    print(f"mycurl: {e}")
-    sys.exit(1)
+    except InvalidTimeoutException as e:
+        print(f"mycurl: {e}")
+        sys.exit(1)
 
-except FileWriteException as error:
-    print(f"mycurl: {error}")
-    sys.exit(1)
+    except RequestTimeoutException:
+        print("mycurl: Request timed out")
+        sys.exit(1)
 
-except TooManyRedirectsException as error:
-    print(f"mycurl: {error}")
-    sys.exit(1)
+    except ConnectionException:
+        print("mycurl: Connection failed")
+        sys.exit(1)
 
-except TLSException as error:
-    print(f"mycurl: {error}")
-    sys.exit(1)
+    except FileUploadException as e :
+        print(f"mycurl: {e}")
+        sys.exit(1)
 
-except InvalidAuthException as error:
-    print(f"mycurl: {error}")
-    sys.exit(1)
+    except InvalidCookieException as e:
+        print(f"mycurl: {e}")
+        sys.exit(1)
 
-except InvalidFormException as error:
-    print(f"mycurl: {error}")
-    sys.exit(1)
+    except FileWriteException as error:
+        print(f"mycurl: {error}")
+        sys.exit(1)
 
-except RequestFailedException as error:
-    print(f"mycurl: {error}")
-    sys.exit(1)
+    except TooManyRedirectsException as error:
+        print(f"mycurl: {error}")
+        sys.exit(1)
+
+    except TLSException as error:
+        print(f"mycurl: {error}")
+        sys.exit(1)
+
+    except InvalidAuthException as error:
+        print(f"mycurl: {error}")
+        sys.exit(1)
+
+    except InvalidFormException as error:
+        print(f"mycurl: {error}")
+        sys.exit(1)
+
+    except RequestFailedException as error:
+        print(f"mycurl: {error}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

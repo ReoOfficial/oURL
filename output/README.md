@@ -1,25 +1,46 @@
-# `output/` Directory Documentation
+# MyCurl Output Layer
 
-## Directory purpose
-
-The `output/` directory controls presentation and destination. It converts response data into readable terminal text and writes raw response bytes to files.
+This directory controls how MyCurl presents responses and where response data is sent.
 
 ```text
 output/
+├── README.md
 ├── formatter.py
 └── printer.py
 ```
 
-## Responsibility boundary
+## Current quality status
+
+```text
+output/formatter.py    100% coverage
+output/printer.py      100% coverage
+```
+
+The complete project currently reports:
+
+```text
+109 tests passed
+100% total coverage
+0 missed statements
+```
+
+---
+
+# Directory responsibilities
 
 | File | Responsibility |
 |---|---|
-| `formatter.py` | What terminal output looks like |
-| `printer.py` | Where output goes |
+| `formatter.py` | Builds terminal-display text |
+| `printer.py` | Prints text or writes raw bytes |
 
-This separation allows formatting to be tested without writing files and file output to be tested without formatting HTTP data.
+The distinction is important:
 
-## Directory flow
+```text
+formatter = what output looks like
+printer   = where output goes
+```
+
+## Output flow
 
 ```text
 Request + Response
@@ -40,9 +61,9 @@ terminal  file
 
 # `formatter.py`
 
-## Responsibility
+## Purpose
 
-Builds terminal-friendly output for normal, verbose, and HEAD modes.
+Builds normal, verbose, and HEAD terminal output.
 
 ## Public functions
 
@@ -57,13 +78,13 @@ format_response(request, response)
 
 ### Purpose
 
-Pretty-prints JSON while preserving ordinary text.
+Pretty-prints valid JSON and preserves ordinary text.
 
 ### Behavior
 
-1. Attempts `json.loads(body)`.
-2. If successful, returns indented JSON.
-3. If parsing fails, returns the original body.
+1. Attempts to parse the body with `json.loads`.
+2. Valid JSON is returned with indentation.
+3. Invalid JSON or plain text is returned unchanged.
 
 Example input:
 
@@ -79,18 +100,17 @@ Example output:
 }
 ```
 
-### Unicode behavior
+### Unicode
 
-`ensure_ascii=False` keeps readable Unicode characters instead of escaping them unnecessarily.
+Uses:
 
-### Expected inputs
+```python
+ensure_ascii=False
+```
 
-- decoded text;
-- possibly empty text;
-- non-JSON text;
-- valid JSON.
+so Unicode characters remain readable.
 
-### Errors handled
+### Handled errors
 
 - `json.JSONDecodeError`;
 - `TypeError`.
@@ -101,27 +121,29 @@ Example output:
 
 ### Purpose
 
-Creates the complete terminal display string according to request flags.
+Creates the complete terminal-output string.
 
 ## URL processing
 
-Uses `urlparse(request.url)` to obtain:
+Uses `urlparse` to obtain:
 
-- network location for Host;
+- Host;
 - path;
 - query string.
 
-Example:
+Example URL:
 
 ```text
 https://example.com/test?name=Reo
 ```
 
-Verbose path:
+Displayed path:
 
 ```text
 /test?name=Reo
 ```
+
+---
 
 ## Normal mode
 
@@ -134,21 +156,20 @@ head = False
 
 Output:
 
-- formatted response body only.
+```text
+formatted response body only
+```
+
+---
 
 ## Verbose mode
 
-Conditions:
+Verbose output includes:
 
-```text
-verbose = True
-```
+### Outgoing request
 
-Output contains:
-
-### Outgoing request information
-
-- method and path;
+- method;
+- path;
 - Host;
 - prepared request headers;
 - request body when present.
@@ -163,13 +184,16 @@ Example:
 
 ```text
 > POST /post HTTP/1.1
-> Host: postman-echo.com
+> Host: example.com
 > User-Agent: MyCurl/2.1
+> Accept: */*
+> X-Test: hello
 > Content-Type: application/x-www-form-urlencoded
-> Content-Length: 8
 ```
 
-### Incoming response information
+The formatter includes custom prepared headers in addition to standard ones.
+
+### Incoming response
 
 - status line;
 - response headers.
@@ -189,92 +213,108 @@ Example:
 
 ### Response body
 
-Printed unless HEAD mode is enabled.
+Displayed unless HEAD mode is active.
 
 ### Statistics
 
 ```text
 Time: 0.125s
-Size: 19 bytes
+Size: 512 bytes
 ```
+
+---
 
 ## HEAD mode
 
 ### `-I` without `-v`
 
-Output:
+Displays:
 
 - status line;
 - response headers;
-- no body.
+- no response body.
 
 ### `-I` with `-v`
 
-Outgoing method is displayed as:
+Displays the outgoing method as:
 
 ```text
 HEAD
 ```
 
-rather than the original default method.
+even when the original default method began as GET.
 
-## Prepared header use
+---
 
-The formatter uses:
+## Prepared headers
+
+The formatter reads:
 
 ```python
 response.get_sent_headers()
 ```
 
-This displays actual prepared headers rather than only user-provided headers.
+This displays what Requests actually prepared, including generated headers.
 
-## Protocol display
+---
 
-The status and request lines currently display `HTTP/1.1` as a fixed string. The actual transport may differ.
+## Current protocol display
 
-## Inputs
+The formatter currently displays:
 
-- internal `Request`;
-- internal `Response`.
+```text
+HTTP/1.1
+```
 
-## Output
+as a fixed string.
 
-One formatted string.
+The actual transport protocol may differ.
 
-## Tests
+---
 
-`tests/test_formatter.py` contains 8 tests for:
+## Formatter tests
+
+`tests/test_formatter.py` contains 8 tests.
+
+Covered behavior:
 
 - JSON;
 - plain text;
 - normal body;
-- verbose request and response;
-- statistics;
-- POST body;
+- verbose request details;
+- verbose response details;
+- custom prepared headers;
+- request body;
+- elapsed time;
+- response size;
 - HEAD without body;
 - verbose HEAD method.
 
-## Maintenance guidance
+Measured coverage:
 
-- Keep file writing out of the formatter.
-- Keep transport logic out of the formatter.
-- Add tests for every new output mode.
-- Avoid ANSI formatting unless file output and terminal detection are handled carefully.
-- Future cURL parity should separate verbose output to stderr.
+```text
+output/formatter.py    100%
+```
 
 ---
 
 # `printer.py`
 
-## Responsibility
+## Purpose
 
-Routes data to the terminal or a file and converts file-system failures into project-specific errors.
+Routes output to the terminal or a destination file.
 
 ## Public function
 
 ```python
-print_response(output, filename=None, content=None)
+print_response(
+    output,
+    filename=None,
+    content=None,
+)
 ```
+
+---
 
 ## Terminal path
 
@@ -284,26 +324,31 @@ When `filename` is absent:
 print(output)
 ```
 
-The formatted string may include:
+The formatted string may contain:
 
 - body;
-- verbose headers;
+- verbose request details;
+- response headers;
 - timing;
 - size;
-- HEAD response headers.
+- HEAD response information.
+
+---
 
 ## File path
 
-When `filename` exists:
+When `filename` is supplied:
 
-1. opens destination in `wb` mode;
+1. opens the destination in binary mode;
 2. writes raw response bytes;
-3. prints a success confirmation.
+3. prints a confirmation message.
 
 ```python
 with open(filename, "wb") as file:
     file.write(content)
 ```
+
+---
 
 ## Why binary mode matters
 
@@ -313,10 +358,12 @@ Text mode can corrupt:
 - ZIP archives;
 - PDFs;
 - executables;
-- compressed data;
-- arbitrary binary responses.
+- compressed responses;
+- arbitrary binary data.
 
-Raw bytes preserve the server response exactly.
+Writing bytes preserves the response exactly.
+
+---
 
 ## Error handling
 
@@ -332,57 +379,101 @@ Examples:
 - permission denied;
 - invalid path;
 - inaccessible device;
-- file-system failure.
+- file-system error.
+
+---
 
 ## Inputs
 
 | Parameter | Meaning |
 |---|---|
 | `output` | formatted terminal text |
-| `filename` | optional destination |
+| `filename` | optional output path |
 | `content` | raw response bytes |
 
-## Output
+## Outputs
 
 - terminal text;
-- raw output file;
-- success message;
+- raw file;
+- confirmation message;
 - `FileWriteException`.
-
-## Tests
-
-`tests/test_printer.py` contains:
-
-1. invalid path test;
-2. exact binary-byte output test.
-
-## Interaction with formatter
-
-The two representations must not be confused:
-
-```text
-formatted output -> terminal
-raw content      -> file
-```
-
-## Maintenance guidance
-
-When adding progress bars, silent mode, or stderr behavior, preserve binary output and keep terminal-only decorations out of saved files.
 
 ---
 
-## Output directory known limitations
+## Printer tests
 
-- Verbose data is not yet separated to stderr.
-- HTTP protocol text is fixed as HTTP/1.1.
-- Very large downloads are held in memory instead of streamed.
-- Terminal body output assumes decoded text.
+`tests/test_printer.py` contains 3 tests.
 
-## Directory maintenance checklist
+Covered behavior:
 
-- Normal output remains body-only.
-- HEAD never prints a body.
+- terminal output;
+- exact binary output;
+- invalid output paths;
+- custom file-write exception.
+
+Measured coverage:
+
+```text
+output/printer.py    100%
+```
+
+---
+
+# Formatter and printer separation
+
+The two representations must stay separate:
+
+```text
+formatted text -> terminal
+raw bytes      -> file
+```
+
+This prevents verbose text, JSON formatting, or newline conversion from corrupting downloaded files.
+
+---
+
+# Current limitations
+
+- Verbose information is not yet separated to stderr.
+- HTTP protocol text is fixed as `HTTP/1.1`.
+- Large responses are loaded into memory instead of streamed.
+- Terminal output depends on decoded response text.
+
+---
+
+# Possible future improvements
+
+- separate verbose information to stderr;
+- stream large downloads;
+- display the actual HTTP protocol version;
+- add silent mode;
+- add progress output;
+- support explicit overwrite policies;
+- support response-header-only file output.
+
+---
+
+# Adding a new output feature
+
+1. Decide whether it changes formatting or destination behavior.
+2. Update `formatter.py` for terminal appearance.
+3. Update `printer.py` for terminal/file routing.
+4. Preserve binary-safe output.
+5. Add formatter tests.
+6. Add printer tests.
+7. Add direct-main tests if orchestration changes.
+8. Add CLI tests if user-visible behavior changes.
+9. Update documentation.
+
+---
+
+# Maintenance checklist
+
+- Normal mode remains body-only.
+- HEAD never displays a response body.
 - Verbose mode shows prepared headers.
-- File output writes bytes.
+- Custom headers are included.
+- File output always writes bytes.
 - Invalid paths use `FileWriteException`.
-- Printer and formatter tests remain separate.
+- Formatter and printer tests stay separate.
+- Both output modules remain at 100% coverage.

@@ -1,23 +1,39 @@
-# `utils/` Directory Documentation
+# MyCurl Utility Layer
 
-## Directory purpose
-
-The `utils/` directory contains reusable conversion, file-handling, cleanup, and error-definition logic shared by the rest of MyCurl.
+This directory contains reusable conversion, file-handling, cleanup, and exception-definition logic for MyCurl 2.1.
 
 ```text
 utils/
+├── README.md
 ├── errors.py
 └── helpers.py
 ```
 
-## Responsibility map
+## Current quality status
+
+```text
+utils/errors.py     100% coverage
+utils/helpers.py    100% coverage
+```
+
+The complete project currently reports:
+
+```text
+109 tests passed
+100% total coverage
+0 missed statements
+```
+
+---
+
+# Directory responsibilities
 
 | File | Responsibility |
 |---|---|
-| `helpers.py` | Convert raw CLI strings and manage utility file operations |
-| `errors.py` | Define typed application failures |
+| `helpers.py` | Convert CLI strings and manage utility file operations |
+| `errors.py` | Define typed MyCurl failures |
 
-## Directory flow
+## Utility flow
 
 ```text
 raw CLI strings
@@ -26,7 +42,7 @@ raw CLI strings
 helper functions
       |
       v
-structured values
+structured Python values
       |
       v
 Request / Client / main.py
@@ -36,11 +52,11 @@ Request / Client / main.py
 
 # `helpers.py`
 
-## Responsibility
+## Purpose
 
-Converts text from argparse into structured Python values and manages upload and cookie-file resources.
+Converts raw argument strings into structured values and manages upload and cookie-file resources.
 
-## Main functions
+## Public functions
 
 ```python
 parse_headers(headers)
@@ -56,27 +72,23 @@ save_cookies(cookies, filename)
 
 ### Input
 
-List of strings:
-
 ```python
 [
     "Accept: application/json",
-    "X-Test: value",
+    "X-Test: hello",
 ]
 ```
 
 ### Output
 
-Dictionary:
-
 ```python
 {
     "Accept": "application/json",
-    "X-Test": "value",
+    "X-Test": "hello",
 }
 ```
 
-### Splitting rule
+### Splitting behavior
 
 Uses the first colon only:
 
@@ -84,7 +96,7 @@ Uses the first colon only:
 header.split(":", 1)
 ```
 
-This preserves values containing colons.
+This preserves values containing additional colons.
 
 Example:
 
@@ -94,13 +106,7 @@ Authorization: Bearer abc:def
 
 ### Validation relationship
 
-`cli.validator.validate_headers()` runs first, so helper parsing expects correctly structured header strings.
-
-### Tests
-
-- one header;
-- multiple headers;
-- colon inside value.
+`cli.validator.validate_headers()` checks syntax first.
 
 ---
 
@@ -118,37 +124,36 @@ username:password
 ("username", "password")
 ```
 
-### Splitting rule
+### Splitting behavior
 
-Uses the first colon only:
+Uses:
 
 ```python
 auth.split(":", 1)
 ```
 
-A password may contain additional colons.
+so passwords may contain additional colons.
 
-### Empty input
+### No authentication
 
-Returns `None`.
+Returns:
+
+```python
+None
+```
 
 ### Validation relationship
 
-`validate_auth()` checks the separator and non-empty username before parsing.
+`validate_auth()` checks:
 
-### Tests
-
-- normal authentication;
-- password containing colons;
-- no authentication.
+- separator exists;
+- username is not empty.
 
 ---
 
 ## `parse_cookies(cookie)`
 
 ### Input
-
-Semicolon-separated cookie string:
 
 ```text
 session=abc123; theme=dark
@@ -165,39 +170,31 @@ session=abc123; theme=dark
 
 ### Validation performed here
 
-Each pair:
+Every cookie pair must:
 
-- must contain `=`;
-- must have a non-empty name.
+- contain `=`;
+- have a non-empty name.
 
-Malformed input raises:
+Invalid input raises:
 
 ```python
 InvalidCookieException
 ```
 
-Examples:
+Rejected examples:
 
 ```text
 malformed_cookie
 =abc123
 ```
 
-### Why validation and parsing are combined
-
-The string must be split into individual cookie pairs to validate each name/value entry, so one function performs both tasks.
-
-### Empty input
+### No cookies
 
 Returns an empty dictionary.
 
-### Tests
+### Why validation happens here
 
-- one cookie;
-- multiple cookies;
-- no cookies;
-- missing separator;
-- empty name.
+The string must be split into individual cookie pairs before each name can be checked.
 
 ---
 
@@ -236,27 +233,31 @@ files = {
 }
 ```
 
-### Normal fields
+---
 
-Values not beginning with `@` enter the `data` dictionary.
+## Normal form fields
 
-### File fields
+Values not beginning with `@` are stored in `data`.
+
+## File fields
 
 Values beginning with `@`:
 
-1. remove the `@`;
-2. open the path in `rb` mode;
+1. remove `@`;
+2. open the file in `rb` mode;
 3. store the file object in `files`.
 
-### Missing or inaccessible files
+## Missing or inaccessible files
 
-Raises:
+Raise:
 
 ```python
 FileUploadException
 ```
 
-### Partial-failure cleanup
+---
+
+## Partial-failure cleanup
 
 Example:
 
@@ -265,30 +266,28 @@ first=@exists.txt
 second=@missing.txt
 ```
 
-If the first file opens and the second fails, the function closes every already opened file before re-raising the error.
+If the first file opens and the second fails, `parse_forms()` closes all already opened files before re-raising the error.
 
-This prevents file-handle leaks before control reaches `Client.send()`.
+This prevents leaks before control reaches the client.
 
-### Validation relationship
-
-`validate_forms()` checks `=` and non-empty field names before parsing.
-
-### Ownership lifecycle
+## Resource ownership
 
 ```text
-parse_forms opens file
+parse_forms opens files
        |
-       +-- parsing failure -> parse_forms closes it
+       +-- parsing fails
+       |      |
+       |      v
+       |  parse_forms closes files
        |
-       +-- parsing success -> Client.send owns it
-                                  |
-                                  +-- finally closes it
+       +-- parsing succeeds
+              |
+              v
+          Client.send owns files
+              |
+              v
+          finally closes files
 ```
-
-### Tests
-
-- normal form data;
-- cleanup when a later file fails.
 
 ---
 
@@ -296,27 +295,29 @@ parse_forms opens file
 
 ### Purpose
 
-Writes response cookies using Netscape cookie-file format.
+Writes response cookies in Netscape cookie-file format.
 
-### File contents
-
-Each row stores:
+### Stored fields
 
 - domain;
-- include-subdomains flag;
+- subdomain flag;
 - path;
 - secure flag;
 - expiration;
-- name;
-- value.
+- cookie name;
+- cookie value.
 
-### Header
+### File header
 
 ```text
 # Netscape HTTP Cookie File
 ```
 
-### File-system errors
+### No filename
+
+Returns without writing.
+
+### File-system failure
 
 Any `OSError` becomes:
 
@@ -324,29 +325,56 @@ Any `OSError` becomes:
 FileWriteException
 ```
 
-### Empty filename
+### Used by
 
-Returns without writing.
+```text
+main.py
+```
 
-### Tests
+after a successful response when `-c` is supplied.
 
-Invalid cookie-jar path is tested.
+---
 
-### Usage
+## Helper tests
 
-Called from `main.py` after a successful response when `-c` is supplied.
+`tests/test_helpers.py` contains 16 tests.
+
+Covered behavior:
+
+- one header;
+- multiple headers;
+- colon inside a header value;
+- authentication;
+- colon inside a password;
+- no authentication;
+- one cookie;
+- multiple cookies;
+- no cookies;
+- malformed cookie;
+- empty cookie name;
+- normal form data;
+- partial upload cleanup;
+- invalid cookie-jar path;
+- successful cookie-file output;
+- no-op cookie saving without a filename.
+
+Measured coverage:
+
+```text
+utils/helpers.py    100%
+```
 
 ---
 
 # `errors.py`
 
-## Responsibility
+## Purpose
 
-Defines custom exception types representing failures MyCurl understands.
+Defines custom exception types for failures MyCurl understands.
 
-## Why custom exceptions exist
+## Why custom exceptions are useful
 
-They allow code to react to categories instead of parsing message strings.
+They allow code to react to error categories instead of parsing strings.
 
 Example:
 
@@ -356,11 +384,13 @@ except TLSException as error:
     sys.exit(1)
 ```
 
+---
+
 ## Validation exceptions
 
 | Exception | Meaning |
 |---|---|
-| `InvalidURLException` | URL is missing HTTP/HTTPS structure |
+| `InvalidURLException` | URL is invalid |
 | `InvalidMethodException` | Method is unsupported |
 | `InvalidHeaderException` | Header syntax is invalid |
 | `InvalidTimeoutException` | Timeout is zero or negative |
@@ -368,15 +398,19 @@ except TLSException as error:
 | `InvalidFormException` | Form syntax is invalid |
 | `InvalidCookieException` | Cookie syntax is invalid |
 
+---
+
 ## Networking exceptions
 
 | Exception | Meaning |
 |---|---|
 | `RequestTimeoutException` | Request exceeded timeout |
-| `TooManyRedirectsException` | Redirect limit exceeded |
-| `TLSException` | Certificate verification failed |
+| `TooManyRedirectsException` | Redirect limit was exceeded |
+| `TLSException` | TLS certificate verification failed |
 | `ConnectionException` | Connection could not be established |
-| `RequestFailedException` | Another Requests-level failure occurred |
+| `RequestFailedException` | Another Requests failure occurred |
+
+---
 
 ## File exceptions
 
@@ -385,34 +419,63 @@ except TLSException as error:
 | `FileUploadException` | Upload file could not be opened |
 | `FileWriteException` | Output or cookie file could not be written |
 
-## Exception translation layers
+---
+
+## Exception flow
+
+### Validation or helper failure
 
 ```text
-arg or helper failure
-      -> custom exception
-      -> main.py
-      -> readable CLI error
+invalid value
+   |
+   v
+custom exception
+   |
+   v
+main.py
+   |
+   v
+readable error + exit code 1
 ```
+
+### Requests failure
 
 ```text
 Requests exception
-      -> Client.send
-      -> custom exception
-      -> main.py
-      -> readable CLI error
+   |
+   v
+Client.send()
+   |
+   v
+MyCurl exception
+   |
+   v
+main.py
+   |
+   v
+readable error + exit code 1
 ```
+
+### File-system failure
 
 ```text
 OSError
-      -> helper or printer
-      -> FileWriteException / FileUploadException
-      -> main.py
-      -> readable CLI error
+   |
+   v
+helper or printer
+   |
+   v
+FileUploadException / FileWriteException
+   |
+   v
+main.py
 ```
+
+---
 
 ## Empty exception classes
 
-The classes may contain only:
+The exception classes may contain only:
 
 ```python
 pass
@@ -420,35 +483,66 @@ pass
 
 Their value comes from their distinct types.
 
-## Tests
+---
 
-`utils/errors.py` reaches 100% measured coverage because all classes are imported and used across test modules.
+## Error tests
+
+The exception classes are exercised across:
+
+- validator tests;
+- helper tests;
+- client tests;
+- printer tests;
+- main tests;
+- CLI subprocess tests.
+
+Measured coverage:
+
+```text
+utils/errors.py    100%
+```
 
 ---
 
-## Utility directory design principles
+# Utility design principles
 
-### Conversion without orchestration
+## Conversion without orchestration
 
 Helpers convert values but do not coordinate the application.
 
-### Typed failures
+## Typed failures
 
-Every meaningful failure category uses a distinct exception.
+Every meaningful category has a dedicated exception.
 
-### Resource safety
+## Resource safety
 
-Opened files are closed at the stage that owns them.
+Files are closed by the stage that owns them.
 
-### Reusability
+## Small, testable functions
 
-Functions are small and can be tested without networking.
+Helper functions remain independent of networking.
 
-## Directory maintenance checklist
+---
+
+# Adding a utility feature
+
+1. Add a focused helper function.
+2. Decide whether validation belongs in `cli/validator.py` or the helper.
+3. Add a dedicated exception when the category is meaningful.
+4. Convert `OSError` where appropriate.
+5. Clean up any opened resources.
+6. Add unit tests.
+7. Add direct-main tests if orchestration changes.
+8. Update documentation.
+
+---
+
+# Maintenance checklist
 
 - Split only once when values may contain separators.
-- Validate names before storing dictionaries.
-- Convert `OSError` to custom exceptions.
+- Reject empty names where required.
+- Convert file errors into custom exceptions.
 - Close partially opened resources.
-- Add tests for malformed and empty values.
-- Add new exceptions only for meaningful categories.
+- Test malformed, empty, and successful paths.
+- Keep helpers independent of networking.
+- Keep both utility modules at 100% coverage.

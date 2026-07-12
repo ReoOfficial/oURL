@@ -11,8 +11,25 @@ from core.response import Response
 from utils.errors import (
     RequestTimeoutException,
     ConnectionException,
+    TooManyRedirectsException,
 )
 
+
+def test_too_many_redirects_is_converted(monkeypatch):
+    def fake_request(**kwargs):
+        raise requests.exceptions.TooManyRedirects
+
+    monkeypatch.setattr(
+        client_module.requests,
+        "request",
+        fake_request,
+    )
+
+    with pytest.raises(
+        TooManyRedirectsException,
+        match="Too many redirects",
+    ):
+        Client().send(make_request())
 
 def make_request(**changes):
     values = {

@@ -1,8 +1,15 @@
 import pytest
 
 from utils.helpers import save_cookies
-from utils.errors import FileWriteException
+from utils.errors import (
+    FileWriteException,
+    FileUploadException,
+)
 
+from unittest.mock import (
+    mock_open,
+    patch,
+)
 from utils.errors import InvalidCookieException
 
 from utils.helpers import (
@@ -11,6 +18,26 @@ from utils.helpers import (
     parse_cookies,
     parse_forms,
 )
+
+
+def test_opened_files_are_closed_when_later_upload_fails():
+    first_file = mock_open()
+    first_handle = first_file.return_value
+
+    def fake_open(filename, mode):
+        if filename == "exists.txt":
+            return first_handle
+
+        raise FileNotFoundError(filename)
+
+    with patch("builtins.open", side_effect=fake_open):
+        with pytest.raises(FileUploadException):
+            parse_forms([
+                "first=@exists.txt",
+                "second=@missing.txt",
+            ])
+
+    first_handle.close.assert_called_once()
 
 
 def test_invalid_cookie_jar_path():

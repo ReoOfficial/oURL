@@ -24,3 +24,6 @@ class InvalidCookieException(Exception):
 
 class FileWriteException(Exception):
     pass
+
+class TooManyRedirectsException(Exception):
+    pass

@@ -55,26 +55,32 @@ def parse_forms(forms):
     data = {}
     files = {}
 
-    if not forms:
-        return data, files
-    
-    for form in forms:
+    try:
+        for form in forms:
+            name, value = form.split("=", 1)
 
-        key, value = form.split("=", 1)
+            name = name.strip()
+            value = value.strip()
 
-        if value.startswith("@"):
-            filename = value[1:]
+            if value.startswith("@"):
+                file_path = value[1:]
 
-            try:
-                files[key] = open(filename, "rb")
-            
-            except FileNotFoundError:
-                raise FileUploadException(
-                    f"File not found: {filename}"
-                )
-        
-        else:
-            data[key] = value
+                try:
+                    files[name] = open(file_path, "rb")
+                except OSError as error:
+                    raise FileUploadException(
+                        f"Could not open upload file: {file_path}\n"
+                        f"{error}"
+                    ) from error
+            else:
+                data[name] = value
+
+    except Exception:
+        # Close any files that were opened before the failure.
+        for opened_file in files.values():
+            opened_file.close()
+
+        raise
 
     return data, files
 

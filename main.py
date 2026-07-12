@@ -27,6 +27,7 @@ from utils.errors import (
     FileUploadException,
     InvalidCookieException,
     FileWriteException,
+    TooManyRedirectsException,
 )
 
 try:
@@ -115,5 +116,9 @@ except InvalidCookieException as e:
     sys.exit(1)
 
 except FileWriteException as error:
+    print(f"mycurl: {error}")
+    sys.exit(1)
+
+except TooManyRedirectsException as error:
     print(f"mycurl: {error}")
     sys.exit(1)

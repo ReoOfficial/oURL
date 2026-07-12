@@ -2,7 +2,11 @@ import requests
 
 from core.response import Response
 
-from utils.errors import RequestTimeoutException, ConnectionException
+from utils.errors import (
+    RequestTimeoutException, 
+    ConnectionException,
+    TooManyRedirectsException,
+)
 
 class Client:
 
@@ -54,15 +58,20 @@ class Client:
                 sent_headers=response.request.headers,
             )
         
-        except requests.exceptions.Timeout:
+        except requests.exceptions.Timeout as error:
             raise RequestTimeoutException(
                 "Request timed out"
-            )
+            ) from error
+        
+        except requests.exceptions.TooManyRedirects as error:
+            raise TooManyRedirectsException(
+                "Too many redirects"
+            ) from error
     
-        except requests.exceptions.ConnectionError:
+        except requests.exceptions.ConnectionError as error:
             raise ConnectionException(
                 "Connection failed"
-            )
+            ) from error
         
         finally:
             if request.form_files:
